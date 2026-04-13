@@ -4,6 +4,8 @@ const cookieParser = require("cookie-parser");
 
 const { env } = require("./config/env");
 const { authRouter } = require("./routes/auth");
+const { documentsRouter } = require("./routes/documents");
+const { authRequired } = require("./middleware/auth");
 
 const app = express();
 
@@ -17,6 +19,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/auth", authRouter);
+app.use("/documents", authRequired, documentsRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({
