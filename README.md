@@ -6,7 +6,7 @@ Browser-based block document editor built for the internship practical assignmen
 
 - [x] Subphase 1.1: Architecture finalized
 - [x] Subphase 1.2: Project setup
-- [ ] Subphase 1.3: Database design
+- [x] Subphase 1.3: Database design
 
 ## Chosen Stack
 
@@ -33,10 +33,11 @@ Architecture notes live in:
 - `docs/architecture.md`
 - `docs/system-design.md`
 - `docs/setup.md`
+- `docs/data-model.md`
 
 ## Current Focus
 
-The workspace and deployment setup are in place. The next phase is database design.
+The workspace, deployment setup, and schema design are in place. The next phase is implementation.
 
 ## Setup Snapshot
 

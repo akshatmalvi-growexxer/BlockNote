@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BlockType {
+  paragraph
+  heading_1
+  heading_2
+  todo
+  code
+  divider
+  image
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String         @map("password_hash")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  documents      Document[]
+  refreshTokens  RefreshToken[]
+
+  @@map("users")
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  title       String
+  shareToken  String?  @unique @map("share_token")
+  isPublic    Boolean  @default(false) @map("is_public")
+  revision    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blocks      Block[]
+
+  @@index([userId, updatedAt])
+  @@index([userId, createdAt])
+  @@map("documents")
+}
+
+model Block {
+  id          String    @id @default(cuid())
+  documentId  String    @map("document_id")
+  type        BlockType
+  content     Json
+  orderIndex  Float     @map("order_index")
+  parentId    String?   @map("parent_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  parent      Block?    @relation("BlockChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Block[]   @relation("BlockChildren")
+
+  @@index([documentId, orderIndex])
+  @@index([documentId, parentId, orderIndex])
+  @@index([parentId])
+  @@map("blocks")
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([userId, revokedAt])
+  @@map("refresh_tokens")
+}
