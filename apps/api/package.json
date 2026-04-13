@@ -1,0 +1,10 @@
+{
+  "name": "api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "node src/server.js",
+    "build": "node -e \"console.log('Build step will be added in setup phase')\"",
+    "start": "node src/server.js"
+  }
+}
