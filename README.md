@@ -5,7 +5,7 @@ Browser-based block document editor built for the internship practical assignmen
 ## Phase Status
 
 - [x] Subphase 1.1: Architecture finalized
-- [ ] Subphase 1.2: Project setup
+- [x] Subphase 1.2: Project setup
 - [ ] Subphase 1.3: Database design
 
 ## Chosen Stack
@@ -32,7 +32,16 @@ Architecture notes live in:
 
 - `docs/architecture.md`
 - `docs/system-design.md`
+- `docs/setup.md`
 
 ## Current Focus
 
-We are currently working on the architecture and foundation before moving into setup and implementation.
+The workspace and deployment setup are in place. The next phase is database design.
+
+## Setup Snapshot
+
+- Monorepo workspace configured at the root
+- Next.js app scaffolded in `apps/web`
+- Express API scaffolded in `apps/api`
+- Root `.env.example` added for local and deployment configuration
+- `render.yaml` added as the initial backend and database deployment blueprint
