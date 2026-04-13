@@ -3,6 +3,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const { env } = require("./config/env");
+const { authRouter } = require("./routes/auth");
 
 const app = express();
 
@@ -14,6 +15,8 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+
+app.use("/auth", authRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({
