@@ -6,9 +6,12 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
     "dev:web": "npm --workspace apps/web run dev",
     "dev:api": "npm --workspace apps/api run dev",
+    "lint": "npm run lint --workspaces --if-present",
     "build:web": "npm --workspace apps/web run build",
-    "build:api": "npm --workspace apps/api run build"
+    "build:api": "npm --workspace apps/api run build",
+    "build": "npm run build --workspaces --if-present"
   }
 }

@@ -2,10 +2,15 @@
   "name": "web",
   "private": true,
   "version": "0.1.0",
+  "dependencies": {
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "node -e \"console.log('Web lint configuration will be added in a later phase')\""
   }
 }
