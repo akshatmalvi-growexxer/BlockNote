@@ -22,6 +22,14 @@ export default function HomePage() {
             <li key={item}>{item}</li>
           ))}
         </ul>
+        <div className="cta-row">
+          <a className="cta primary" href="/login">
+            Log in
+          </a>
+          <a className="cta secondary" href="/register">
+            Create account
+          </a>
+        </div>
       </section>
     </main>
   );
