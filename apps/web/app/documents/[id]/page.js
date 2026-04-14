@@ -79,6 +79,21 @@ function syncEditableText(node, text, isActive) {
   }
 }
 
+function focusBlockNode(node, atEnd = false) {
+  if (!node) return;
+  if (node.classList?.contains("block")) {
+    const imageInput = node.querySelector?.(".image-input");
+    if (imageInput) {
+      imageInput.focus();
+      return;
+    }
+  }
+  if (typeof node.focus === "function") {
+    node.focus();
+    placeCaret(node, atEnd);
+  }
+}
+
 export default function DocumentEditorPage() {
   const router = useRouter();
   const params = useParams();
@@ -300,6 +315,12 @@ export default function DocumentEditorPage() {
     });
     closeSlashMenu(block.id);
     setActiveBlockId(block.id);
+    setTimeout(() => {
+      const node = blockRefs.current.get(block.id);
+      if (node) {
+        focusBlockNode(node, false);
+      }
+    }, 0);
   }
 
   function getSlashMatches() {
@@ -371,6 +392,7 @@ export default function DocumentEditorPage() {
     const beforeText = text.slice(0, caretOffset);
     const afterText = text.slice(caretOffset);
     const nextBlock = blocks[index + 1];
+    const nextType = block.type === "todo" ? "todo" : "paragraph";
 
     if (caretOffset < text.length) {
       node.textContent = beforeText;
@@ -390,8 +412,11 @@ export default function DocumentEditorPage() {
       method: "POST",
       body: JSON.stringify({
         documentId,
-        type: "paragraph",
-        content: { text: afterText },
+        type: nextType,
+        content:
+          nextType === "todo"
+            ? { text: afterText, checked: false }
+            : { text: afterText },
         parentId: block.parentId ?? null,
         beforeId: block.id,
         afterId: nextBlock?.id,
