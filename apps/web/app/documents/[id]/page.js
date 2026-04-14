@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { apiRequest } from "../../../lib/api";
 import { useAuthGuard } from "../../../lib/useAuthGuard";
+import Toast from "../../../components/Toast";
 
 const BLOCK_TYPES = {
   paragraph: "Paragraph",
@@ -115,6 +116,7 @@ export default function DocumentEditorPage() {
     copying: false,
     error: "",
   });
+  const [toast, setToast] = useState("");
   const blockRefs = useRef(new Map());
   const activeBlockIdRef = useRef(null);
   const blocksRef = useRef([]);
@@ -298,10 +300,9 @@ export default function DocumentEditorPage() {
         }));
       }
     } catch (error) {
-      setShareState((prev) => ({
-        ...prev,
-        error: error.message || "Failed to update sharing.",
-      }));
+      const message = error.message || "Failed to update sharing.";
+      setShareState((prev) => ({ ...prev, error: message }));
+      setToast(message);
     }
   }
 
@@ -692,6 +693,7 @@ export default function DocumentEditorPage() {
             New block
           </button>
         </header>
+        <Toast message={toast} onClose={() => setToast("")} />
         <section className="share-card">
           <div>
             <h3>Share</h3>

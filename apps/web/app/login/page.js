@@ -5,18 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { apiRequest } from "../../lib/api";
 import { setAccessToken } from "../../lib/auth";
+import Toast from "../../components/Toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
+    setToast("");
     setLoading(true);
 
     try {
@@ -28,7 +29,7 @@ export default function LoginPage() {
       const destination = searchParams.get("from") || "/dashboard";
       router.push(destination);
     } catch (err) {
-      setError(err.message || "Login failed.");
+      setToast(err.message || "Login failed.");
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,7 @@ export default function LoginPage() {
       <section className="auth-card">
         <h1>Welcome back</h1>
         <p>Log in to continue building your documents.</p>
-        {error ? <div className="auth-error">{error}</div> : null}
+        <Toast message={toast} onClose={() => setToast("")} />
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-field">
             <label htmlFor="email">Email</label>

@@ -51,6 +51,7 @@ export default function SharePage() {
   const router = useRouter();
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!token) return;
@@ -70,7 +71,7 @@ export default function SharePage() {
         }
       } catch (error) {
         if (!cancelled) {
-          router.push("/login");
+          setError(error.message || "Shared document not available.");
         }
       } finally {
         if (!cancelled) {
@@ -100,7 +101,8 @@ export default function SharePage() {
     return (
       <main className="editor-shell">
         <section className="editor-card">
-          <h1>Shared document not found.</h1>
+          <h1>Shared document not available.</h1>
+          {error ? <p className="empty-state">{error}</p> : null}
         </section>
       </main>
     );

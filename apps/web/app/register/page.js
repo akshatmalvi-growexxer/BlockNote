@@ -5,17 +5,18 @@ import { useRouter } from "next/navigation";
 
 import { apiRequest } from "../../lib/api";
 import { setAccessToken } from "../../lib/auth";
+import Toast from "../../components/Toast";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
+    setToast("");
     setLoading(true);
 
     try {
@@ -26,7 +27,7 @@ export default function RegisterPage() {
       setAccessToken(data.accessToken);
       router.push("/dashboard");
     } catch (err) {
-      setError(err.message || "Registration failed.");
+      setToast(err.message || "Registration failed.");
     } finally {
       setLoading(false);
     }
@@ -37,7 +38,7 @@ export default function RegisterPage() {
       <section className="auth-card">
         <h1>Create your account</h1>
         <p>Password must be at least 8 characters and include a number.</p>
-        {error ? <div className="auth-error">{error}</div> : null}
+        <Toast message={toast} onClose={() => setToast("")} />
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-field">
             <label htmlFor="email">Email</label>

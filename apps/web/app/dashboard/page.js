@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiRequest } from "../../lib/api";
 import { clearAccessToken } from "../../lib/auth";
 import { useAuthGuard } from "../../lib/useAuthGuard";
+import Toast from "../../components/Toast";
 
 function formatTimestamp(value) {
   const date = new Date(value);
@@ -20,14 +21,18 @@ export default function DashboardPage() {
   const { user, loading } = useAuthGuard();
   const [documents, setDocuments] = useState([]);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [loadingDocs, setLoadingDocs] = useState(true);
+  const [toast, setToast] = useState("");
 
   async function loadDocuments() {
+    setLoadingDocs(true);
     try {
       const data = await apiRequest("/documents");
       setDocuments(data.documents || []);
     } catch (err) {
-      setError(err.message || "Failed to load documents.");
+      setToast(err.message || "Failed to load documents.");
+    } finally {
+      setLoadingDocs(false);
     }
   }
 
@@ -48,12 +53,12 @@ export default function DashboardPage() {
 
   async function handleCreate() {
     setBusy(true);
-    setError("");
+    setToast("");
     try {
       const data = await apiRequest("/documents", { method: "POST" });
       setDocuments((prev) => [data.document, ...prev]);
     } catch (err) {
-      setError(err.message || "Failed to create document.");
+      setToast(err.message || "Failed to create document.");
     } finally {
       setBusy(false);
     }
@@ -69,18 +74,18 @@ export default function DashboardPage() {
         prev.map((doc) => (doc.id === id ? data.document : doc)),
       );
     } catch (err) {
-      setError(err.message || "Failed to rename document.");
+      setToast(err.message || "Failed to rename document.");
     }
   }
 
   async function handleDelete(id) {
     setBusy(true);
-    setError("");
+    setToast("");
     try {
       await apiRequest(`/documents/${id}`, { method: "DELETE" });
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
     } catch (err) {
-      setError(err.message || "Failed to delete document.");
+      setToast(err.message || "Failed to delete document.");
     } finally {
       setBusy(false);
     }
@@ -99,6 +104,7 @@ export default function DashboardPage() {
   return (
     <main className="dashboard-shell">
       <section className="dashboard-card">
+        <Toast message={toast} onClose={() => setToast("")} />
         <div className="dashboard-header">
           <div>
             <h1>Your documents</h1>
@@ -114,10 +120,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {error ? <div className="auth-error">{error}</div> : null}
-
-        {documents.length === 0 ? (
-          <p className="auth-note">No documents yet. Create your first one.</p>
+        {loadingDocs ? (
+          <div className="loading-state">
+            <span className="loading-dot" />
+            Loading documents...
+          </div>
+        ) : documents.length === 0 ? (
+          <p className="empty-state">No documents yet. Create your first one.</p>
         ) : (
           <ul className="document-list">
             {documents.map((doc) => (
