@@ -23,6 +23,16 @@ function getDisplayText(block) {
   return block.content.text || "";
 }
 
+function syncEditableText(node, text, isActive) {
+  if (!node) return;
+  const nextText = text ?? "";
+  if (!isActive || node.textContent === "") {
+    if (node.textContent !== nextText) {
+      node.textContent = nextText;
+    }
+  }
+}
+
 export default function DocumentEditorPage() {
   const router = useRouter();
   const params = useParams();
@@ -257,14 +267,16 @@ export default function DocumentEditorPage() {
                       contentEditable
                       suppressContentEditableWarning
                       ref={(node) => {
-                        if (node) blockRefs.current.set(block.id, node);
+                        if (node) {
+                          blockRefs.current.set(block.id, node);
+                          syncEditableText(node, getDisplayText(block), isActive);
+                        }
                       }}
                       onFocus={() => handleBlockSelect(block.id)}
                       onInput={(event) =>
                         handleTextInput(block.id, event.currentTarget.textContent)
                       }
                     >
-                      {getDisplayText(block)}
                     </div>
                   </div>
                 </div>
@@ -285,14 +297,16 @@ export default function DocumentEditorPage() {
                   contentEditable
                   suppressContentEditableWarning
                   ref={(node) => {
-                    if (node) blockRefs.current.set(block.id, node);
+                    if (node) {
+                      blockRefs.current.set(block.id, node);
+                      syncEditableText(node, getDisplayText(block), isActive);
+                    }
                   }}
                   onFocus={() => handleBlockSelect(block.id)}
                   onInput={(event) =>
                     handleTextInput(block.id, event.currentTarget.textContent)
                   }
                 >
-                  {getDisplayText(block)}
                 </div>
               </div>
             );
