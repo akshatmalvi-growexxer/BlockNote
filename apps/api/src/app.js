@@ -6,6 +6,7 @@ const { env } = require("./config/env");
 const { authRouter } = require("./routes/auth");
 const { documentsRouter } = require("./routes/documents");
 const { authRequired } = require("./middleware/auth");
+const { blocksRouter } = require("./routes/blocks");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(cookieParser());
 
 app.use("/auth", authRouter);
 app.use("/documents", authRequired, documentsRouter);
+app.use("/blocks", authRequired, blocksRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({

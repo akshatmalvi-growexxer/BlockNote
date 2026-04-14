@@ -19,6 +19,47 @@ router.get("/", async (req, res) => {
   return res.status(200).json({ documents });
 });
 
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const document = await prisma.document.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        orderBy: { orderIndex: "asc" },
+        select: {
+          id: true,
+          documentId: true,
+          type: true,
+          content: true,
+          orderIndex: true,
+          parentId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!document) {
+    return res.status(404).json({ message: "Document not found." });
+  }
+
+  if (document.userId !== req.user.id) {
+    return res.status(403).json({ message: "Forbidden." });
+  }
+
+  return res.status(200).json({
+    document: {
+      id: document.id,
+      title: document.title,
+      updatedAt: document.updatedAt,
+      createdAt: document.createdAt,
+      blocks: document.blocks,
+    },
+  });
+});
+
 router.post("/", async (req, res) => {
   const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
 
