@@ -11,6 +11,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "node -e \"console.log('Web lint configuration will be added in a later phase')\""
+    "lint": "node -e \"console.log('Web lint configuration will be added in a later phase')\"",
+    "test:save-ordering": "node scripts/save-ordering-tests.js"
   }
 }

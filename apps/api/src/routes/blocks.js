@@ -83,11 +83,11 @@ function resolveOrderIndex({ before, after }) {
   if (before && after) {
     return (before.orderIndex + after.orderIndex) / 2;
   }
-  if (after) {
-    return after.orderIndex + BASE_GAP;
-  }
   if (before) {
-    return before.orderIndex - BASE_GAP;
+    return before.orderIndex + BASE_GAP;
+  }
+  if (after) {
+    return after.orderIndex - BASE_GAP;
   }
   return BASE_GAP;
 }

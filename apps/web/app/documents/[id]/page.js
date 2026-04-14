@@ -347,6 +347,16 @@ export default function DocumentEditorPage() {
     return null;
   }
 
+  function findNextFocusableIndex(index, list) {
+    for (let i = index + 1; i < list.length; i += 1) {
+      const candidate = list[i];
+      if (candidate.type !== "divider" && candidate.type !== "image") {
+        return i;
+      }
+    }
+    return null;
+  }
+
   function getEmptyContentForType(type) {
     if (type === "todo") return { text: "", checked: false };
     if (type === "image") return { url: "", alt: "" };
@@ -361,6 +371,10 @@ export default function DocumentEditorPage() {
   function closeSlashMenu(clearBlockId) {
     setSlashMenu({ open: false, blockId: null, query: "" });
     if (clearBlockId) {
+      const node = blockRefs.current.get(clearBlockId);
+      if (node && node.textContent !== "") {
+        node.textContent = "";
+      }
       updateBlockContent(clearBlockId, { text: "" });
     }
   }
@@ -510,22 +524,24 @@ export default function DocumentEditorPage() {
     }
 
     const previousIndex = findPreviousFocusableIndex(index, blocks);
-    const previousBlock =
-      previousIndex !== null ? blocks[previousIndex] : null;
+    const nextIndex = findNextFocusableIndex(index, blocks);
+    const previousBlock = previousIndex !== null ? blocks[previousIndex] : null;
+    const nextBlock = nextIndex !== null ? blocks[nextIndex] : null;
 
     await apiRequest(`/blocks/${block.id}`, { method: "DELETE" });
     removeBlockById(block.id);
 
-    if (previousBlock) {
-      setActiveBlockId(previousBlock.id);
-      setTimeout(() => {
-        const prevNode = blockRefs.current.get(previousBlock.id);
-        if (prevNode) {
-          prevNode.focus();
-          placeCaret(prevNode, true);
-        }
-      }, 0);
-    }
+    const targetBlock = previousBlock || nextBlock;
+    if (!targetBlock) return;
+
+    setActiveBlockId(targetBlock.id);
+    setTimeout(() => {
+      const targetNode = blockRefs.current.get(targetBlock.id);
+      if (targetNode) {
+        targetNode.focus();
+        placeCaret(targetNode, true);
+      }
+    }, 0);
   }
 
   async function handleAddBlock() {
