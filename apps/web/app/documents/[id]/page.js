@@ -198,6 +198,15 @@ export default function DocumentEditorPage() {
                   }}
                 >
                   <span className="block-label">{label}</span>
+                  <input
+                    className="image-input"
+                    placeholder="Paste image URL..."
+                    value={block.content?.url || ""}
+                    onChange={(event) =>
+                      handleTextInput(block.id, event.target.value)
+                    }
+                    onFocus={() => handleBlockSelect(block.id)}
+                  />
                   {block.content?.url ? (
                     <img src={block.content.url} alt={block.content?.alt || ""} />
                   ) : (

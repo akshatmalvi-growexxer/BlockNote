@@ -383,6 +383,14 @@ body {
   border-radius: 12px;
 }
 
+.image-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  margin-bottom: 12px;
+}
+
 .image-placeholder {
   padding: 16px;
   border-radius: 12px;

@@ -16,6 +16,32 @@ const allowedTypes = [
 const BASE_GAP = 1000;
 const MIN_GAP = 0.001;
 
+function normalizeContent(type, content) {
+  const safe = content && typeof content === "object" ? content : {};
+
+  if (type === "todo") {
+    return {
+      text: typeof safe.text === "string" ? safe.text : "",
+      checked: Boolean(safe.checked),
+    };
+  }
+
+  if (type === "image") {
+    return {
+      url: typeof safe.url === "string" ? safe.url : "",
+      alt: typeof safe.alt === "string" ? safe.alt : "",
+    };
+  }
+
+  if (type === "divider") {
+    return {};
+  }
+
+  return {
+    text: typeof safe.text === "string" ? safe.text : "",
+  };
+}
+
 async function requireOwnedDocument(documentId, userId) {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -131,7 +157,7 @@ router.post("/", async (req, res) => {
     data: {
       documentId,
       type,
-      content: content ?? {},
+      content: normalizeContent(type, content),
       orderIndex,
       parentId: expectedParent,
     },
@@ -156,7 +182,7 @@ router.patch("/:id", async (req, res) => {
 
   const block = await prisma.block.findUnique({
     where: { id },
-    select: { id: true, documentId: true },
+    select: { id: true, documentId: true, type: true, content: true },
   });
 
   if (!block) {
@@ -172,11 +198,15 @@ router.patch("/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid block type." });
   }
 
+  const nextType = type || block.type;
+  const nextContent =
+    content !== undefined ? content : block.content;
+
   const updated = await prisma.block.update({
     where: { id },
     data: {
       ...(type ? { type } : {}),
-      ...(content !== undefined ? { content } : {}),
+      content: normalizeContent(nextType, nextContent),
     },
     select: {
       id: true,
