@@ -16,6 +16,16 @@ const BLOCK_TYPES = {
   image: "Image",
 };
 
+const SLASH_OPTIONS = [
+  { type: "paragraph", label: "Paragraph" },
+  { type: "heading_1", label: "Heading 1" },
+  { type: "heading_2", label: "Heading 2" },
+  { type: "todo", label: "To-do" },
+  { type: "code", label: "Code" },
+  { type: "divider", label: "Divider" },
+  { type: "image", label: "Image" },
+];
+
 function getDisplayText(block) {
   if (!block?.content) return "";
   if (block.type === "todo") return block.content.text || "";
@@ -45,6 +55,20 @@ function placeCaret(node, atEnd) {
   selection.addRange(range);
 }
 
+function insertTextAtCaret(node, text) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  const textNode = document.createTextNode(text);
+  range.insertNode(textNode);
+  range.setStartAfter(textNode);
+  range.setEndAfter(textNode);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  node.normalize();
+}
+
 function syncEditableText(node, text, isActive) {
   if (!node) return;
   const nextText = text ?? "";
@@ -63,6 +87,11 @@ export default function DocumentEditorPage() {
   const [document, setDocument] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [activeBlockId, setActiveBlockId] = useState(null);
+  const [slashMenu, setSlashMenu] = useState({
+    open: false,
+    blockId: null,
+    query: "",
+  });
   const blockRefs = useRef(new Map());
 
   const documentId = params?.id;
@@ -125,6 +154,9 @@ export default function DocumentEditorPage() {
   const blockList = useMemo(() => blocks, [blocks]);
 
   function handleBlockSelect(blockId) {
+    if (slashMenu.open && slashMenu.blockId !== blockId) {
+      setSlashMenu({ open: false, blockId: null, query: "" });
+    }
     setActiveBlockId(blockId);
   }
 
@@ -177,6 +209,20 @@ export default function DocumentEditorPage() {
     );
   }
 
+  function updateBlockType(blockId, nextType, nextContent) {
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              type: nextType,
+              content: nextContent,
+            }
+          : block,
+      ),
+    );
+  }
+
   function insertBlockAfter(index, newBlock) {
     setBlocks((prev) => {
       const next = [...prev];
@@ -199,7 +245,102 @@ export default function DocumentEditorPage() {
     return null;
   }
 
+  function getEmptyContentForType(type) {
+    if (type === "todo") return { text: "", checked: false };
+    if (type === "image") return { url: "", alt: "" };
+    if (type === "divider") return {};
+    return { text: "" };
+  }
+
+  function openSlashMenuFor(blockId) {
+    setSlashMenu({ open: true, blockId, query: "" });
+  }
+
+  function closeSlashMenu(clearBlockId) {
+    setSlashMenu({ open: false, blockId: null, query: "" });
+    if (clearBlockId) {
+      updateBlockContent(clearBlockId, { text: "" });
+    }
+  }
+
+  async function selectSlashOption(block, option) {
+    const nextContent = getEmptyContentForType(option.type);
+    updateBlockType(block.id, option.type, nextContent);
+    await apiRequest(`/blocks/${block.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        type: option.type,
+        content: nextContent,
+      }),
+    });
+    closeSlashMenu(block.id);
+    setActiveBlockId(block.id);
+  }
+
+  function getSlashMatches() {
+    if (!slashMenu.open) return [];
+    const query = slashMenu.query.toLowerCase();
+    if (!query) return SLASH_OPTIONS;
+    return SLASH_OPTIONS.filter(
+      (option) =>
+        option.label.toLowerCase().includes(query) ||
+        option.type.toLowerCase().includes(query),
+    );
+  }
+
+  function handleSlashKey(event, block) {
+    if (!slashMenu.open || slashMenu.blockId !== block.id) return false;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSlashMenu(block.id);
+      return true;
+    }
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      setSlashMenu((prev) => {
+        if (!prev.query) {
+          return { open: false, blockId: null, query: "" };
+        }
+        return { ...prev, query: prev.query.slice(0, -1) };
+      });
+      return true;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const matches = getSlashMatches();
+      if (matches.length) {
+        selectSlashOption(block, matches[0]);
+      } else {
+        closeSlashMenu(block.id);
+      }
+      return true;
+    }
+
+    if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) {
+      event.preventDefault();
+      setSlashMenu((prev) => ({
+        ...prev,
+        query: `${prev.query}${event.key}`,
+      }));
+      return true;
+    }
+
+    return false;
+  }
+
   async function handleEnter(block, index, node) {
+    if (slashMenu.open && slashMenu.blockId === block.id) {
+      const matches = getSlashMatches();
+      if (matches.length) {
+        await selectSlashOption(block, matches[0]);
+      } else {
+        closeSlashMenu(block.id);
+      }
+      return;
+    }
     const text = node.textContent || "";
     const caretOffset = getCaretOffset(node) ?? text.length;
     const beforeText = text.slice(0, caretOffset);
@@ -333,6 +474,9 @@ export default function DocumentEditorPage() {
           {blockList.map((block, index) => {
             const isActive = block.id === activeBlockId;
             const label = BLOCK_TYPES[block.type] || block.type;
+            const showSlashMenu =
+              slashMenu.open && slashMenu.blockId === block.id;
+            const slashMatches = showSlashMenu ? getSlashMatches() : [];
 
             if (block.type === "divider") {
               return (
@@ -413,6 +557,18 @@ export default function DocumentEditorPage() {
                       }}
                       onFocus={() => handleBlockSelect(block.id)}
                       onKeyDown={(event) => {
+                        if (handleSlashKey(event, block)) {
+                          return;
+                        }
+                        if (
+                          event.key === "/" &&
+                          (event.currentTarget.textContent || "") === "" &&
+                          (getCaretOffset(event.currentTarget) ?? 0) === 0
+                        ) {
+                          event.preventDefault();
+                          openSlashMenuFor(block.id);
+                          return;
+                        }
                         if (event.key === "Enter") {
                           event.preventDefault();
                           handleEnter(block, index, event.currentTarget);
@@ -430,6 +586,24 @@ export default function DocumentEditorPage() {
                     >
                     </div>
                   </div>
+                  {showSlashMenu ? (
+                    <div className="slash-menu">
+                      {slashMatches.length ? (
+                        slashMatches.map((option) => (
+                          <button
+                            key={option.type}
+                            type="button"
+                            className="slash-item"
+                            onClick={() => selectSlashOption(block, option)}
+                          >
+                            {option.label}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="slash-empty">No matches</div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               );
             }
@@ -455,6 +629,27 @@ export default function DocumentEditorPage() {
                   }}
                   onFocus={() => handleBlockSelect(block.id)}
                   onKeyDown={(event) => {
+                    if (handleSlashKey(event, block)) {
+                      return;
+                    }
+                    if (
+                      event.key === "/" &&
+                      (event.currentTarget.textContent || "") === "" &&
+                      (getCaretOffset(event.currentTarget) ?? 0) === 0
+                    ) {
+                      event.preventDefault();
+                      openSlashMenuFor(block.id);
+                      return;
+                    }
+                    if (block.type === "code" && event.key === "Tab") {
+                      event.preventDefault();
+                      insertTextAtCaret(event.currentTarget, "  ");
+                      handleTextInput(
+                        block.id,
+                        event.currentTarget.textContent,
+                      );
+                      return;
+                    }
                     if (event.key === "Enter") {
                       event.preventDefault();
                       handleEnter(block, index, event.currentTarget);
@@ -471,6 +666,24 @@ export default function DocumentEditorPage() {
                   }
                 >
                 </div>
+                {showSlashMenu ? (
+                  <div className="slash-menu">
+                    {slashMatches.length ? (
+                      slashMatches.map((option) => (
+                        <button
+                          key={option.type}
+                          type="button"
+                          className="slash-item"
+                          onClick={() => selectSlashOption(block, option)}
+                        >
+                          {option.label}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="slash-empty">No matches</div>
+                    )}
+                  </div>
+                ) : null}
               </div>
             );
           })}

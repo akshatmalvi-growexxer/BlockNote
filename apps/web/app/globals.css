@@ -398,6 +398,35 @@ body {
   color: var(--muted);
 }
 
+.slash-menu {
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #fffaf3;
+  border: 1px solid var(--panel-border);
+  display: grid;
+  gap: 6px;
+}
+
+.slash-item {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #f1e5d6;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.slash-item:hover {
+  border-color: var(--accent);
+}
+
+.slash-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .todo-row {
   display: flex;
   gap: 12px;
