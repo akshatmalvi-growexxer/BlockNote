@@ -40,20 +40,33 @@ export default function DocumentEditorPage() {
 
     let cancelled = false;
 
-    async function loadDocument() {
-      setLoading(true);
-      try {
-        const data = await apiRequest(`/documents/${documentId}`);
-        if (!cancelled) {
-          setDocument(data.document);
-          setBlocks(data.document.blocks || []);
-          if (data.document.blocks?.length) {
-            setActiveBlockId(data.document.blocks[0].id);
-          }
+  async function loadDocument() {
+    setLoading(true);
+    try {
+      const data = await apiRequest(`/documents/${documentId}`);
+      if (!cancelled) {
+        setDocument(data.document);
+        const incomingBlocks = data.document.blocks || [];
+        if (incomingBlocks.length === 0) {
+          const created = await apiRequest("/blocks", {
+            method: "POST",
+            body: JSON.stringify({
+              documentId,
+              type: "paragraph",
+              content: { text: "" },
+            }),
+          });
+          const seededBlock = created.block;
+          setBlocks([seededBlock]);
+          setActiveBlockId(seededBlock.id);
+        } else {
+          setBlocks(incomingBlocks);
+          setActiveBlockId(incomingBlocks[0].id);
         }
-      } catch (error) {
-        if (!cancelled) {
-          router.push("/dashboard");
+      }
+    } catch (error) {
+      if (!cancelled) {
+        router.push("/dashboard");
         }
       } finally {
         if (!cancelled) {
@@ -93,6 +106,15 @@ export default function DocumentEditorPage() {
             content: {
               ...block.content,
               text,
+            },
+          };
+        }
+        if (block.type === "image") {
+          return {
+            ...block,
+            content: {
+              ...block.content,
+              url: text,
             },
           };
         }
