@@ -20,6 +20,7 @@
     "lint": "node --check src/server.js && node --check src/app.js && node --check src/config/env.js",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
+    "test:security": "node scripts/security-tests.js",
     "start": "node src/server.js"
   }
 }
