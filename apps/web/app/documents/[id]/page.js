@@ -847,7 +847,7 @@ export default function DocumentEditorPage() {
             const showSlashMenu =
               slashMenu.open && slashMenu.blockId === block.id;
             const slashMatches = showSlashMenu ? getSlashMatches() : [];
-            const showActions = isActive;
+            const showActions = true;
 
             function handleDragStart(event) {
               event.dataTransfer.effectAllowed = "move";
