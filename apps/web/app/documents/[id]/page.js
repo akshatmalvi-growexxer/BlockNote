@@ -110,6 +110,8 @@ export default function DocumentEditorPage() {
   });
   const [saveState, setSaveState] = useState("idle");
   const [dragId, setDragId] = useState(null);
+  const [editingImages, setEditingImages] = useState({});
+  const [imageErrors, setImageErrors] = useState({});
   const [shareState, setShareState] = useState({
     enabled: false,
     token: null,
@@ -225,6 +227,10 @@ export default function DocumentEditorPage() {
   }
 
   function handleTextInput(blockId, text) {
+    const current = blocksRef.current.find((block) => block.id === blockId);
+    if (current?.type === "image") {
+      clearImageError(blockId);
+    }
     setBlocks((prev) =>
       prev.map((block) => {
         if (block.id !== blockId) return block;
@@ -287,6 +293,34 @@ export default function DocumentEditorPage() {
           : block,
       ),
     );
+  }
+
+  function startImageEdit(blockId) {
+    setEditingImages((prev) => ({ ...prev, [blockId]: true }));
+    clearImageError(blockId);
+  }
+
+  function finishImageEdit(blockId, url) {
+    if (!url || url.trim() === "") return;
+    setEditingImages((prev) => {
+      const next = { ...prev };
+      delete next[blockId];
+      return next;
+    });
+    clearImageError(blockId);
+  }
+
+  function setImageError(blockId, message) {
+    setImageErrors((prev) => ({ ...prev, [blockId]: message }));
+  }
+
+  function clearImageError(blockId) {
+    setImageErrors((prev) => {
+      if (!prev[blockId]) return prev;
+      const next = { ...prev };
+      delete next[blockId];
+      return next;
+    });
   }
 
   function getShareUrl(token) {
@@ -404,6 +438,9 @@ export default function DocumentEditorPage() {
   async function selectSlashOption(block, option) {
     const nextContent = getEmptyContentForType(option.type);
     updateBlockType(block.id, option.type, nextContent);
+    if (option.type === "image") {
+      startImageEdit(block.id);
+    }
     await apiRequest(`/blocks/${block.id}`, {
       method: "PATCH",
       body: JSON.stringify({
@@ -899,6 +936,9 @@ export default function DocumentEditorPage() {
             }
 
             if (block.type === "image") {
+              const isEditingImage =
+                Boolean(editingImages[block.id]) || !block.content?.url;
+              const imageError = imageErrors[block.id];
               return (
                 <div
                   key={`${block.id}-${block.type}`}
@@ -934,19 +974,49 @@ export default function DocumentEditorPage() {
                       </button>
                     </div>
                   ) : null}
-                  <input
-                    className="image-input"
-                    placeholder="Paste image URL..."
-                    value={block.content?.url || ""}
-                    onChange={(event) =>
-                      handleTextInput(block.id, event.target.value)
-                    }
-                    onFocus={() => handleBlockSelect(block.id)}
-                  />
-                  {block.content?.url ? (
-                    <img src={block.content.url} alt={block.content?.alt || ""} />
+                  {isEditingImage ? (
+                    <>
+                      <input
+                        className="image-input"
+                        placeholder="Paste image URL and press Enter..."
+                        value={block.content?.url || ""}
+                        onChange={(event) =>
+                          handleTextInput(block.id, event.target.value)
+                        }
+                        onFocus={() => handleBlockSelect(block.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            finishImageEdit(block.id, event.currentTarget.value);
+                          }
+                        }}
+                      />
+                      {imageError ? (
+                        <div className="image-error">{imageError}</div>
+                      ) : null}
+                    </>
+                  ) : block.content?.url ? (
+                    <img
+                      src={block.content.url}
+                      alt={block.content?.alt || ""}
+                      onError={() => {
+                        setImageError(block.id, "Invalid image URL");
+                        startImageEdit(block.id);
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleBlockSelect(block.id);
+                        startImageEdit(block.id);
+                      }}
+                    />
                   ) : (
-                    <div className="image-placeholder">Image URL not set.</div>
+                    <button
+                      type="button"
+                      className="image-placeholder"
+                      onClick={() => startImageEdit(block.id)}
+                    >
+                      Image URL not set.
+                    </button>
                   )}
                 </div>
               );

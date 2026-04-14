@@ -604,6 +604,14 @@ body {
   border-radius: 12px;
   border: 1px dashed var(--border-muted);
   color: var(--muted);
+  background: transparent;
+  text-align: left;
+}
+
+.image-error {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .share-card {
