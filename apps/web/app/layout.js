@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "BlockNote",
-  description: "Browser-based block document editor",
+  title: "FluxNotes",
+  description: "Minimal block-based document editor",
 };
 
 export default function RootLayout({ children }) {
