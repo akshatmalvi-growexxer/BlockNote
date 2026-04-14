@@ -253,6 +253,11 @@ body {
   background: #fffaf3;
 }
 
+.document-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .document-main {
   display: grid;
   gap: 6px;
@@ -282,6 +287,115 @@ body {
   cursor: pointer;
 }
 
+.editor-shell {
+  min-height: 100vh;
+  padding: 32px;
+  display: grid;
+  place-items: center;
+}
+
+.editor-card {
+  width: min(960px, 100%);
+  border-radius: 28px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  padding: 32px;
+  box-shadow: 0 24px 70px rgba(53, 36, 19, 0.12);
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.editor-header button {
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  padding: 10px 16px;
+  background: #fffaf3;
+  cursor: pointer;
+}
+
+.editor-blocks {
+  display: grid;
+  gap: 16px;
+}
+
+.block {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #fffaf3;
+}
+
+.block.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(184, 92, 56, 0.2);
+}
+
+.block-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.block-text {
+  outline: none;
+  min-height: 24px;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.block-heading_1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.block-heading_2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.block-code {
+  font-family: "Courier New", Courier, monospace;
+  background: #f1e5d6;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.block-divider hr {
+  border: none;
+  border-top: 1px solid var(--panel-border);
+}
+
+.block-image img {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.image-placeholder {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--panel-border);
+  color: var(--muted);
+}
+
+.todo-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.todo-row input[type="checkbox"] {
+  margin-top: 4px;
+}
+
 @media (max-width: 640px) {
   .page-shell {
     padding: 20px;
@@ -298,5 +412,14 @@ body {
 
   .auth-card {
     padding: 24px;
+  }
+
+  .editor-shell {
+    padding: 20px;
+  }
+
+  .editor-card {
+    padding: 24px;
+    border-radius: 22px;
   }
 }

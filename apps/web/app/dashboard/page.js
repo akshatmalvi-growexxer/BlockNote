@@ -123,13 +123,15 @@ export default function DashboardPage() {
             {documents.map((doc) => (
               <li key={doc.id} className="document-item">
                 <div className="document-main">
-                  <input
-                    className="document-title"
-                    defaultValue={doc.title}
-                    onBlur={(event) =>
-                      handleRename(doc.id, event.target.value)
-                    }
-                  />
+                  <a className="document-link" href={`/documents/${doc.id}`}>
+                    <input
+                      className="document-title"
+                      defaultValue={doc.title}
+                      onBlur={(event) =>
+                        handleRename(doc.id, event.target.value)
+                      }
+                    />
+                  </a>
                   <span className="document-meta">
                     Updated {formatTimestamp(doc.updatedAt)}
                   </span>
