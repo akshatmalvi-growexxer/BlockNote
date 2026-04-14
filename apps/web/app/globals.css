@@ -220,6 +220,31 @@ body {
   font-size: 0.9rem;
 }
 
+.empty-block {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 12px 0;
+}
+
+.empty-block-button {
+  border-radius: 999px;
+  border: 1px solid #e0ddd6;
+  padding: 6px 14px;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3d2f24;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.empty-block-button:hover {
+  background: #f4f1ec;
+  border-color: #d7d2c9;
+  transform: translateY(-1px);
+}
+
 .empty-state {
   color: var(--muted);
   font-size: 0.95rem;
@@ -372,11 +397,19 @@ body {
 }
 
 .editor-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.editor-header-top {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.editor-header-main {
+  display: grid;
+  gap: 2px;
 }
 
 .editor-header h1 {
@@ -384,19 +417,20 @@ body {
   font-size: 2rem;
 }
 
-.editor-header button {
+.back-button {
   border-radius: 999px;
   border: 1px solid #e0ddd6;
-  padding: 4px 12px;
+  padding: 2px 10px;
   background: #ffffff;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #3d2f24;
+  line-height: 1.4;
   transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
-.editor-header button:hover {
+.back-button:hover {
   background: #f4f1ec;
   border-color: #d7d2c9;
   transform: translateY(-1px);

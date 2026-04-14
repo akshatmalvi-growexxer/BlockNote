@@ -195,6 +195,26 @@ export default function DocumentEditorPage() {
     blocksRef.current = blocks;
   }, [blocks]);
 
+  useEffect(() => {
+    function handlePointerDown(event) {
+      const target = event.target;
+      if (!target) return;
+      const blockNode = target.closest?.(".block");
+      if (blockNode) return;
+      setActiveBlockId(null);
+      if (slashMenu.open) {
+        setSlashMenu({ open: false, blockId: null, query: "" });
+      }
+    }
+
+    const doc = globalThis.document;
+    if (!doc) return;
+    doc.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      doc.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [slashMenu.open]);
+
   const blockList = useMemo(() => blocks, [blocks]);
 
   function handleBlockSelect(blockId) {
@@ -369,11 +389,12 @@ export default function DocumentEditorPage() {
     setSlashMenu({ open: true, blockId, query: "" });
   }
 
-  function closeSlashMenu(clearBlockId) {
+  function closeSlashMenu(clearBlockId, options = {}) {
+    const { clearText = true } = options;
     setSlashMenu({ open: false, blockId: null, query: "" });
-    if (clearBlockId) {
+    if (clearBlockId && clearText) {
       const node = blockRefs.current.get(clearBlockId);
-      if (node && node.textContent !== "") {
+      if (node && node.isContentEditable && node.textContent !== "") {
         node.textContent = "";
       }
       updateBlockContent(clearBlockId, { text: "" });
@@ -390,7 +411,7 @@ export default function DocumentEditorPage() {
         content: nextContent,
       }),
     });
-    closeSlashMenu(block.id);
+    closeSlashMenu(block.id, { clearText: false });
     setActiveBlockId(block.id);
     setTimeout(() => {
       const node = blockRefs.current.get(block.id);
@@ -536,7 +557,10 @@ export default function DocumentEditorPage() {
     removeBlockById(block.id);
 
     const targetBlock = previousBlock || nextBlock;
-    if (!targetBlock) return;
+    if (!targetBlock) {
+      setActiveBlockId(null);
+      return;
+    }
 
     setActiveBlockId(targetBlock.id);
     setTimeout(() => {
@@ -612,6 +636,8 @@ export default function DocumentEditorPage() {
 
     if (nextTarget) {
       setActiveBlockId(nextTarget.id);
+    } else {
+      setActiveBlockId(null);
     }
   }
 
@@ -714,7 +740,16 @@ export default function DocumentEditorPage() {
     <main className="editor-shell">
       <section className="editor-card">
         <header className="editor-header">
-          <div>
+          <div className="editor-header-top">
+            <button
+              type="button"
+              className="back-button"
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to dashboard
+            </button>
+          </div>
+          <div className="editor-header-main">
             <p className="eyebrow">Document</p>
             <h1>{document.title}</h1>
             <p className="save-state">
@@ -725,9 +760,6 @@ export default function DocumentEditorPage() {
                   : "Saved"}
             </p>
           </div>
-          <button type="button" onClick={() => router.push("/dashboard")}>
-            Back to dashboard
-          </button>
         </header>
         <Toast message={toast} onClose={() => setToast("")} />
         <section className="share-card">
@@ -761,7 +793,16 @@ export default function DocumentEditorPage() {
 
         <div className="editor-blocks">
           {blockList.length === 0 ? (
-            <p className="auth-note">No blocks yet. Add your first block.</p>
+            <div className="empty-block">
+              <p className="auth-note">No blocks yet. Add your first block.</p>
+              <button
+                type="button"
+                className="empty-block-button"
+                onClick={() => createBlockRelative(0, "below")}
+              >
+                Add first block
+              </button>
+            </div>
           ) : null}
           {blockList.map((block, index) => {
             const isActive = block.id === activeBlockId;
