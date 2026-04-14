@@ -392,7 +392,7 @@ export default function DocumentEditorPage() {
     const beforeText = text.slice(0, caretOffset);
     const afterText = text.slice(caretOffset);
     const nextBlock = blocks[index + 1];
-    const nextType = block.type === "todo" ? "todo" : "paragraph";
+    const nextType = "paragraph";
 
     if (caretOffset < text.length) {
       node.textContent = beforeText;
@@ -413,10 +413,7 @@ export default function DocumentEditorPage() {
       body: JSON.stringify({
         documentId,
         type: nextType,
-        content:
-          nextType === "todo"
-            ? { text: afterText, checked: false }
-            : { text: afterText },
+        content: { text: afterText },
         parentId: block.parentId ?? null,
         beforeId: block.id,
         afterId: nextBlock?.id,
@@ -663,7 +660,6 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
-                  <span className="block-label">{label}</span>
                   <hr />
                 </div>
               );
@@ -692,7 +688,6 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
-                  <span className="block-label">{label}</span>
                   <input
                     className="image-input"
                     placeholder="Paste image URL..."
@@ -727,7 +722,6 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
-                  <span className="block-label">{label}</span>
                   <div className="todo-row">
                     <input
                       type="checkbox"
@@ -814,7 +808,6 @@ export default function DocumentEditorPage() {
                 >
                   ::
                 </span>
-                <span className="block-label">{label}</span>
                 <div
                   className={`block-text block-${block.type}`}
                   contentEditable
