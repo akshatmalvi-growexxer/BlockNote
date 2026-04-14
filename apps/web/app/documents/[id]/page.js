@@ -116,6 +116,7 @@ export default function DocumentEditorPage() {
     error: "",
   });
   const blockRefs = useRef(new Map());
+  const activeBlockIdRef = useRef(null);
   const blocksRef = useRef([]);
   const saveTimers = useRef(new Map());
   const saveControllers = useRef(new Map());
@@ -181,6 +182,7 @@ export default function DocumentEditorPage() {
 
   useEffect(() => {
     if (!activeBlockId) return;
+    activeBlockIdRef.current = activeBlockId;
     const node = blockRefs.current.get(activeBlockId);
     if (node && typeof node.focus === "function") {
       node.focus();
@@ -526,6 +528,37 @@ export default function DocumentEditorPage() {
     }
   }
 
+  async function handleAddBlock() {
+    const currentBlocks = blocksRef.current;
+    const activeId = activeBlockIdRef.current;
+    const activeIndex = currentBlocks.findIndex((item) => item.id === activeId);
+    const insertIndex = activeIndex >= 0 ? activeIndex : currentBlocks.length - 1;
+    const before = insertIndex >= 0 ? currentBlocks[insertIndex] : null;
+    const after =
+      insertIndex + 1 < currentBlocks.length
+        ? currentBlocks[insertIndex + 1]
+        : null;
+
+    const created = await apiRequest("/blocks", {
+      method: "POST",
+      body: JSON.stringify({
+        documentId,
+        type: "paragraph",
+        content: { text: "" },
+        beforeId: before?.id,
+        afterId: after?.id,
+      }),
+    });
+
+    if (currentBlocks.length === 0) {
+      setBlocks([created.block]);
+    } else {
+      const targetIndex = insertIndex >= 0 ? insertIndex : currentBlocks.length - 1;
+      insertBlockAfter(targetIndex, created.block);
+    }
+    setActiveBlockId(created.block.id);
+  }
+
   function handleTodoToggle(blockId) {
     setBlocks((prev) =>
       prev.map((block) => {
@@ -638,6 +671,9 @@ export default function DocumentEditorPage() {
           </div>
           <button type="button" onClick={() => router.push("/dashboard")}>
             Back to dashboard
+          </button>
+          <button type="button" onClick={handleAddBlock}>
+            New block
           </button>
         </header>
         <section className="share-card">
