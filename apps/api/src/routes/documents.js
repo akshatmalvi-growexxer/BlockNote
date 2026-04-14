@@ -53,6 +53,8 @@ router.get("/:id", async (req, res) => {
     document: {
       id: document.id,
       title: document.title,
+      isPublic: document.isPublic,
+      shareToken: document.shareToken,
       updatedAt: document.updatedAt,
       createdAt: document.createdAt,
       blocks: document.blocks,
@@ -146,6 +148,78 @@ router.delete("/:id", async (req, res) => {
   await prisma.document.delete({ where: { id } });
 
   return res.status(204).send();
+});
+
+router.post("/:id/share", async (req, res) => {
+  const { id } = req.params;
+
+  const existing = await prisma.document.findUnique({
+    where: { id },
+    select: { id: true, userId: true, shareToken: true },
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Document not found." });
+  }
+
+  if (existing.userId !== req.user.id) {
+    return res.status(403).json({ message: "Forbidden." });
+  }
+
+  const token =
+    existing.shareToken ||
+    require("crypto").randomBytes(24).toString("base64url");
+
+  const updated = await prisma.document.update({
+    where: { id },
+    data: {
+      isPublic: true,
+      shareToken: token,
+    },
+    select: {
+      id: true,
+      title: true,
+      isPublic: true,
+      shareToken: true,
+      updatedAt: true,
+    },
+  });
+
+  return res.status(200).json({ document: updated });
+});
+
+router.delete("/:id/share", async (req, res) => {
+  const { id } = req.params;
+
+  const existing = await prisma.document.findUnique({
+    where: { id },
+    select: { id: true, userId: true },
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Document not found." });
+  }
+
+  if (existing.userId !== req.user.id) {
+    return res.status(403).json({ message: "Forbidden." });
+  }
+
+  const updated = await prisma.document.update({
+    where: { id },
+    data: {
+      isPublic: false,
+      shareToken: null,
+    },
+    select: {
+      id: true,
+      title: true,
+      isPublic: true,
+      shareToken: true,
+      updatedAt: true,
+    },
+  });
+
+  return res.status(200).json({ document: updated });
 });
 
 module.exports = { documentsRouter: router };

@@ -421,6 +421,63 @@ body {
   color: var(--muted);
 }
 
+.share-card {
+  margin: 12px 0 24px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e8e4dd;
+  background: #ffffff;
+  display: grid;
+  gap: 12px;
+}
+
+.share-card h3 {
+  margin: 0 0 6px;
+}
+
+.share-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.share-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.share-actions button {
+  border-radius: 999px;
+  border: 1px solid #e8e4dd;
+  background: #ffffff;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.share-link {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #e0ddd6;
+  font-size: 0.9rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.share-block {
+  padding: 4px 8px;
+}
+
+.share-divider {
+  border: none;
+  border-top: 1px solid #e8e4dd;
+}
+
+.share-todo {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .slash-menu {
   margin-top: 12px;
   padding: 8px;

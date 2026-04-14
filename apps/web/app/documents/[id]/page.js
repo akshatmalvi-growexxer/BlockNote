@@ -109,6 +109,12 @@ export default function DocumentEditorPage() {
   });
   const [saveState, setSaveState] = useState("idle");
   const [dragId, setDragId] = useState(null);
+  const [shareState, setShareState] = useState({
+    enabled: false,
+    token: null,
+    copying: false,
+    error: "",
+  });
   const blockRefs = useRef(new Map());
   const blocksRef = useRef([]);
   const saveTimers = useRef(new Map());
@@ -130,7 +136,12 @@ export default function DocumentEditorPage() {
         const data = await apiRequest(`/documents/${documentId}`);
         if (!cancelled) {
           setDocument(data.document);
-        const incomingBlocks = data.document.blocks || [];
+          setShareState((prev) => ({
+            ...prev,
+            enabled: Boolean(data.document.isPublic),
+            token: data.document.shareToken || null,
+          }));
+          const incomingBlocks = data.document.blocks || [];
           if (incomingBlocks.length === 0) {
             const created = await apiRequest("/blocks", {
               method: "POST",
@@ -252,6 +263,55 @@ export default function DocumentEditorPage() {
           : block,
       ),
     );
+  }
+
+  function getShareUrl(token) {
+    if (!token) return "";
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/share/${token}`;
+    }
+    return `${process.env.NEXT_PUBLIC_APP_URL}/share/${token}`;
+  }
+
+  async function handleShareToggle() {
+    setShareState((prev) => ({ ...prev, error: "" }));
+    try {
+      if (shareState.enabled) {
+        const data = await apiRequest(`/documents/${documentId}/share`, {
+          method: "DELETE",
+        });
+        setShareState((prev) => ({
+          ...prev,
+          enabled: data.document.isPublic,
+          token: data.document.shareToken,
+        }));
+      } else {
+        const data = await apiRequest(`/documents/${documentId}/share`, {
+          method: "POST",
+        });
+        setShareState((prev) => ({
+          ...prev,
+          enabled: data.document.isPublic,
+          token: data.document.shareToken,
+        }));
+      }
+    } catch (error) {
+      setShareState((prev) => ({
+        ...prev,
+        error: error.message || "Failed to update sharing.",
+      }));
+    }
+  }
+
+  async function handleCopyLink() {
+    const url = getShareUrl(shareState.token);
+    if (!url) return;
+    try {
+      setShareState((prev) => ({ ...prev, copying: true }));
+      await navigator.clipboard.writeText(url);
+    } finally {
+      setShareState((prev) => ({ ...prev, copying: false }));
+    }
   }
 
   function insertBlockAfter(index, newBlock) {
@@ -580,6 +640,34 @@ export default function DocumentEditorPage() {
             Back to dashboard
           </button>
         </header>
+        <section className="share-card">
+          <div>
+            <h3>Share</h3>
+            <p>
+              {shareState.enabled
+                ? "Anyone with the link can view this document."
+                : "Generate a read-only share link."}
+            </p>
+          </div>
+          <div className="share-actions">
+            <button type="button" onClick={handleShareToggle}>
+              {shareState.enabled ? "Disable sharing" : "Enable sharing"}
+            </button>
+            {shareState.enabled ? (
+              <button type="button" onClick={handleCopyLink}>
+                {shareState.copying ? "Copying..." : "Copy link"}
+              </button>
+            ) : null}
+          </div>
+          {shareState.enabled ? (
+            <div className="share-link">
+              {getShareUrl(shareState.token)}
+            </div>
+          ) : null}
+          {shareState.error ? (
+            <div className="auth-error">{shareState.error}</div>
+          ) : null}
+        </section>
 
         <div className="editor-blocks">
           {blockList.length === 0 ? (

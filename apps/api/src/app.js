@@ -7,6 +7,8 @@ const { authRouter } = require("./routes/auth");
 const { documentsRouter } = require("./routes/documents");
 const { authRequired } = require("./middleware/auth");
 const { blocksRouter } = require("./routes/blocks");
+const { shareRouter } = require("./routes/share");
+const { rejectShareTokenOnWrite } = require("./middleware/rejectShareToken");
 
 const app = express();
 
@@ -20,8 +22,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/auth", authRouter);
-app.use("/documents", authRequired, documentsRouter);
-app.use("/blocks", authRequired, blocksRouter);
+app.use("/documents", authRequired, rejectShareTokenOnWrite, documentsRouter);
+app.use("/blocks", authRequired, rejectShareTokenOnWrite, blocksRouter);
+app.use("/share", shareRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({
