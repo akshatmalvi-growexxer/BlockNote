@@ -104,6 +104,43 @@ async function findNeighborById(id) {
   });
 }
 
+async function computeOrderIndex({ documentId, parentId, beforeId, afterId }) {
+  const before = beforeId ? await findNeighborById(beforeId) : null;
+  const after = afterId ? await findNeighborById(afterId) : null;
+
+  if (before && before.documentId !== documentId) {
+    return { error: "beforeId is not in document." };
+  }
+  if (after && after.documentId !== documentId) {
+    return { error: "afterId is not in document." };
+  }
+
+  const expectedParent = parentId ?? null;
+  if (before && (before.parentId ?? null) !== expectedParent) {
+    return { error: "beforeId parent mismatch." };
+  }
+  if (after && (after.parentId ?? null) !== expectedParent) {
+    return { error: "afterId parent mismatch." };
+  }
+
+  let orderIndex = resolveOrderIndex({ before, after });
+
+  if (before && after && Math.abs(after.orderIndex - before.orderIndex) < MIN_GAP) {
+    await renormalizeOrder(documentId, expectedParent);
+    const refreshedBefore = await findNeighborById(before.id);
+    const refreshedAfter = await findNeighborById(after.id);
+    orderIndex = resolveOrderIndex({
+      before: refreshedBefore,
+      after: refreshedAfter,
+    });
+  }
+
+  return {
+    orderIndex,
+    expectedParent,
+  };
+}
+
 router.post("/", async (req, res) => {
   const { documentId, type, content, parentId, beforeId, afterId } =
     req.body || {};
@@ -123,34 +160,14 @@ router.post("/", async (req, res) => {
     return res.status(ownership.status).json({ message: ownership.message });
   }
 
-  const before = beforeId ? await findNeighborById(beforeId) : null;
-  const after = afterId ? await findNeighborById(afterId) : null;
-
-  if (before && before.documentId !== documentId) {
-    return res.status(400).json({ message: "beforeId is not in document." });
-  }
-  if (after && after.documentId !== documentId) {
-    return res.status(400).json({ message: "afterId is not in document." });
-  }
-
-  const expectedParent = parentId ?? null;
-  if (before && (before.parentId ?? null) !== expectedParent) {
-    return res.status(400).json({ message: "beforeId parent mismatch." });
-  }
-  if (after && (after.parentId ?? null) !== expectedParent) {
-    return res.status(400).json({ message: "afterId parent mismatch." });
-  }
-
-  let orderIndex = resolveOrderIndex({ before, after });
-
-  if (before && after && Math.abs(after.orderIndex - before.orderIndex) < MIN_GAP) {
-    await renormalizeOrder(documentId, expectedParent);
-    const refreshedBefore = await findNeighborById(before.id);
-    const refreshedAfter = await findNeighborById(after.id);
-    orderIndex = resolveOrderIndex({
-      before: refreshedBefore,
-      after: refreshedAfter,
-    });
+  const computed = await computeOrderIndex({
+    documentId,
+    parentId,
+    beforeId,
+    afterId,
+  });
+  if (computed.error) {
+    return res.status(400).json({ message: computed.error });
   }
 
   const block = await prisma.block.create({
@@ -158,8 +175,8 @@ router.post("/", async (req, res) => {
       documentId,
       type,
       content: normalizeContent(type, content),
-      orderIndex,
-      parentId: expectedParent,
+      orderIndex: computed.orderIndex,
+      parentId: computed.expectedParent,
     },
     select: {
       id: true,
@@ -243,6 +260,56 @@ router.delete("/:id", async (req, res) => {
   await prisma.block.delete({ where: { id } });
 
   return res.status(204).send();
+});
+
+router.patch("/:id/order", async (req, res) => {
+  const { id } = req.params;
+  const { beforeId, afterId, parentId } = req.body || {};
+
+  const block = await prisma.block.findUnique({
+    where: { id },
+    select: { id: true, documentId: true, parentId: true },
+  });
+
+  if (!block) {
+    return res.status(404).json({ message: "Block not found." });
+  }
+
+  const ownership = await requireOwnedDocument(block.documentId, req.user.id);
+  if (!ownership.ok) {
+    return res.status(ownership.status).json({ message: ownership.message });
+  }
+
+  const computed = await computeOrderIndex({
+    documentId: block.documentId,
+    parentId: parentId ?? block.parentId ?? null,
+    beforeId,
+    afterId,
+  });
+
+  if (computed.error) {
+    return res.status(400).json({ message: computed.error });
+  }
+
+  const updated = await prisma.block.update({
+    where: { id },
+    data: {
+      orderIndex: computed.orderIndex,
+      parentId: computed.expectedParent,
+    },
+    select: {
+      id: true,
+      documentId: true,
+      type: true,
+      content: true,
+      orderIndex: true,
+      parentId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return res.status(200).json({ block: updated });
 });
 
 module.exports = { blocksRouter: router };

@@ -93,6 +93,7 @@ export default function DocumentEditorPage() {
     query: "",
   });
   const [saveState, setSaveState] = useState("idle");
+  const [dragId, setDragId] = useState(null);
   const blockRefs = useRef(new Map());
   const blocksRef = useRef([]);
   const saveTimers = useRef(new Map());
@@ -242,6 +243,15 @@ export default function DocumentEditorPage() {
     setBlocks((prev) => {
       const next = [...prev];
       next.splice(index + 1, 0, newBlock);
+      return next;
+    });
+  }
+
+  function moveBlock(fromIndex, toIndex) {
+    setBlocks((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
       return next;
     });
   }
@@ -560,6 +570,51 @@ export default function DocumentEditorPage() {
               slashMenu.open && slashMenu.blockId === block.id;
             const slashMatches = showSlashMenu ? getSlashMatches() : [];
 
+            function handleDragStart(event) {
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", block.id);
+              setDragId(block.id);
+            }
+
+            function handleDragOver(event) {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+            }
+
+            async function handleDrop() {
+              if (!dragId || dragId === block.id) {
+                setDragId(null);
+                return;
+              }
+
+              const fromIndex = blockList.findIndex((item) => item.id === dragId);
+              const toIndex = blockList.findIndex((item) => item.id === block.id);
+              if (fromIndex === -1 || toIndex === -1) {
+                setDragId(null);
+                return;
+              }
+
+              moveBlock(fromIndex, toIndex);
+
+              const nextOrder = [...blockList];
+              const [moved] = nextOrder.splice(fromIndex, 1);
+              nextOrder.splice(toIndex, 0, moved);
+
+              const before = toIndex > 0 ? nextOrder[toIndex - 1] : null;
+              const after =
+                toIndex < nextOrder.length - 1 ? nextOrder[toIndex + 1] : null;
+
+              await apiRequest(`/blocks/${dragId}/order`, {
+                method: "PATCH",
+                body: JSON.stringify({
+                  beforeId: before?.id,
+                  afterId: after?.id,
+                }),
+              });
+
+              setDragId(null);
+            }
+
             if (block.type === "divider") {
               return (
                 <div
@@ -568,12 +623,21 @@ export default function DocumentEditorPage() {
                     isActive ? "is-active" : ""
                   }`}
                   onClick={() => handleBlockSelect(block.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
                   role="button"
                   tabIndex={0}
                   ref={(node) => {
                     if (node) blockRefs.current.set(block.id, node);
                   }}
                 >
+                  <span
+                    className="block-handle"
+                    draggable
+                    onDragStart={handleDragStart}
+                  >
+                    ::
+                  </span>
                   <span className="block-label">{label}</span>
                   <hr />
                 </div>
@@ -588,12 +652,21 @@ export default function DocumentEditorPage() {
                     isActive ? "is-active" : ""
                   }`}
                   onClick={() => handleBlockSelect(block.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
                   role="button"
                   tabIndex={0}
                   ref={(node) => {
                     if (node) blockRefs.current.set(block.id, node);
                   }}
                 >
+                  <span
+                    className="block-handle"
+                    draggable
+                    onDragStart={handleDragStart}
+                  >
+                    ::
+                  </span>
                   <span className="block-label">{label}</span>
                   <input
                     className="image-input"
@@ -619,7 +692,16 @@ export default function DocumentEditorPage() {
                   key={block.id}
                   className={`block block-todo ${isActive ? "is-active" : ""}`}
                   onClick={() => handleBlockSelect(block.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
                 >
+                  <span
+                    className="block-handle"
+                    draggable
+                    onDragStart={handleDragStart}
+                  >
+                    ::
+                  </span>
                   <span className="block-label">{label}</span>
                   <div className="todo-row">
                     <input
@@ -697,7 +779,16 @@ export default function DocumentEditorPage() {
                   block.type
                 } ${isActive ? "is-active" : ""}`}
                 onClick={() => handleBlockSelect(block.id)}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
               >
+                <span
+                  className="block-handle"
+                  draggable
+                  onDragStart={handleDragStart}
+                >
+                  ::
+                </span>
                 <span className="block-label">{label}</span>
                 <div
                   className={`block-text block-${block.type}`}
