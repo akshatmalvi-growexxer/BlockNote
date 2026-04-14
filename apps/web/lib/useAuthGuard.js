@@ -45,9 +45,8 @@ function useAuthGuard() {
             setUser(data.user);
           }
         } catch (error) {
-          clearAccessToken();
           if (!cancelled) {
-            router.push("/login");
+            setUser(null);
           }
         }
       }

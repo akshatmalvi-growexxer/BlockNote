@@ -253,11 +253,6 @@ body {
   background: #fffaf3;
 }
 
-.document-link {
-  text-decoration: none;
-  color: inherit;
-}
-
 .document-main {
   display: grid;
   gap: 6px;
@@ -284,6 +279,15 @@ body {
   border: 1px solid #e1b7a3;
   background: #f6d9c9;
   color: #4c2c1c;
+  cursor: pointer;
+}
+
+.document-open {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: #fffaf3;
+  color: var(--text);
   cursor: pointer;
 }
 

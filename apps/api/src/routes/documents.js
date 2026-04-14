@@ -63,17 +63,30 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
 
-  const document = await prisma.document.create({
-    data: {
-      userId: req.user.id,
-      title: title || "Untitled",
-    },
-    select: {
-      id: true,
-      title: true,
-      updatedAt: true,
-      createdAt: true,
-    },
+  const [document] = await prisma.$transaction(async (tx) => {
+    const created = await tx.document.create({
+      data: {
+        userId: req.user.id,
+        title: title || "Untitled",
+      },
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+        createdAt: true,
+      },
+    });
+
+    await tx.block.create({
+      data: {
+        documentId: created.id,
+        type: "paragraph",
+        content: { text: "" },
+        orderIndex: 1000,
+      },
+    });
+
+    return [created];
   });
 
   return res.status(201).json({ document });
