@@ -323,6 +323,12 @@ body {
   cursor: pointer;
 }
 
+.save-state {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 .editor-blocks {
   display: grid;
   gap: 16px;

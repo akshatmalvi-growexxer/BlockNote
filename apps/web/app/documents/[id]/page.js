@@ -92,7 +92,14 @@ export default function DocumentEditorPage() {
     blockId: null,
     query: "",
   });
+  const [saveState, setSaveState] = useState("idle");
   const blockRefs = useRef(new Map());
+  const blocksRef = useRef([]);
+  const saveTimers = useRef(new Map());
+  const saveControllers = useRef(new Map());
+  const saveSeq = useRef(new Map());
+  const scheduledSaves = useRef(new Set());
+  const pendingSaves = useRef(new Set());
 
   const documentId = params?.id;
 
@@ -101,31 +108,33 @@ export default function DocumentEditorPage() {
 
     let cancelled = false;
 
-  async function loadDocument() {
-    setLoading(true);
-    try {
-      const data = await apiRequest(`/documents/${documentId}`);
-      if (!cancelled) {
-        setDocument(data.document);
+    async function loadDocument() {
+      setLoading(true);
+      try {
+        const data = await apiRequest(`/documents/${documentId}`);
+        if (!cancelled) {
+          setDocument(data.document);
         const incomingBlocks = data.document.blocks || [];
-        if (incomingBlocks.length === 0) {
-          const created = await apiRequest("/blocks", {
-            method: "POST",
-            body: JSON.stringify({
-              documentId,
-              type: "paragraph",
-              content: { text: "" },
-            }),
-          });
-          const seededBlock = created.block;
-          setBlocks([seededBlock]);
-          setActiveBlockId(seededBlock.id);
-        } else {
-          setBlocks(incomingBlocks);
-          setActiveBlockId(incomingBlocks[0].id);
+          if (incomingBlocks.length === 0) {
+            const created = await apiRequest("/blocks", {
+              method: "POST",
+              body: JSON.stringify({
+                documentId,
+                type: "paragraph",
+                content: { text: "" },
+              }),
+            });
+            const seededBlock = created.block;
+            setBlocks([seededBlock]);
+            setActiveBlockId(seededBlock.id);
+            setSaveState("saved");
+          } else {
+            setBlocks(incomingBlocks);
+            setActiveBlockId(incomingBlocks[0].id);
+            setSaveState("saved");
+          }
         }
-      }
-    } catch (error) {
+      } catch (error) {
       if (!cancelled) {
         router.push("/dashboard");
         }
@@ -150,6 +159,10 @@ export default function DocumentEditorPage() {
       node.focus();
     }
   }, [activeBlockId]);
+
+  useEffect(() => {
+    blocksRef.current = blocks;
+  }, [blocks]);
 
   const blockList = useMemo(() => blocks, [blocks]);
 
@@ -191,6 +204,7 @@ export default function DocumentEditorPage() {
         };
       }),
     );
+    scheduleBlockSave(blockId);
   }
 
   function updateBlockContent(blockId, nextContent) {
@@ -207,6 +221,7 @@ export default function DocumentEditorPage() {
           : block,
       ),
     );
+    scheduleBlockSave(blockId);
   }
 
   function updateBlockType(blockId, nextType, nextContent) {
@@ -432,6 +447,66 @@ export default function DocumentEditorPage() {
         };
       }),
     );
+    scheduleBlockSave(blockId);
+  }
+
+  function scheduleBlockSave(blockId) {
+    scheduledSaves.current.add(blockId);
+    setSaveState("saving");
+    const existingTimer = saveTimers.current.get(blockId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    const timer = setTimeout(() => {
+      saveBlock(blockId);
+    }, 1000);
+    saveTimers.current.set(blockId, timer);
+  }
+
+  async function saveBlock(blockId) {
+    const block = blocksRef.current.find((item) => item.id === blockId);
+    if (!block) {
+      scheduledSaves.current.delete(blockId);
+      return;
+    }
+
+    scheduledSaves.current.delete(blockId);
+    pendingSaves.current.add(blockId);
+
+    const previousController = saveControllers.current.get(blockId);
+    if (previousController) {
+      previousController.abort();
+    }
+    const controller = new AbortController();
+    saveControllers.current.set(blockId, controller);
+
+    const nextSeq = (saveSeq.current.get(blockId) || 0) + 1;
+    saveSeq.current.set(blockId, nextSeq);
+
+    try {
+      await apiRequest(`/blocks/${blockId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          content: block.content,
+        }),
+        signal: controller.signal,
+      });
+      if (saveSeq.current.get(blockId) !== nextSeq) {
+        return;
+      }
+      pendingSaves.current.delete(blockId);
+      if (
+        scheduledSaves.current.size === 0 &&
+        pendingSaves.current.size === 0
+      ) {
+        setSaveState("saved");
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        setSaveState("error");
+        pendingSaves.current.delete(blockId);
+      }
+    }
   }
 
   if (loading || authLoading) {
@@ -461,6 +536,13 @@ export default function DocumentEditorPage() {
           <div>
             <p className="eyebrow">Document</p>
             <h1>{document.title}</h1>
+            <p className="save-state">
+              {saveState === "saving"
+                ? "Saving..."
+                : saveState === "error"
+                  ? "Save failed"
+                  : "Saved"}
+            </p>
           </div>
           <button type="button" onClick={() => router.push("/dashboard")}>
             Back to dashboard
