@@ -548,16 +548,34 @@ export default function DocumentEditorPage() {
     }, 0);
   }
 
-  async function handleAddBlock() {
+  async function createBlockRelative(index, position) {
     const currentBlocks = blocksRef.current;
-    const activeId = activeBlockIdRef.current;
-    const activeIndex = currentBlocks.findIndex((item) => item.id === activeId);
-    const insertIndex = activeIndex >= 0 ? activeIndex : currentBlocks.length - 1;
-    const before = insertIndex >= 0 ? currentBlocks[insertIndex] : null;
+    if (currentBlocks.length === 0) {
+      const created = await apiRequest("/blocks", {
+        method: "POST",
+        body: JSON.stringify({
+          documentId,
+          type: "paragraph",
+          content: { text: "" },
+        }),
+      });
+      setBlocks([created.block]);
+      setActiveBlockId(created.block.id);
+      return;
+    }
+
+    const before =
+      position === "above"
+        ? index > 0
+          ? currentBlocks[index - 1]
+          : null
+        : currentBlocks[index];
     const after =
-      insertIndex + 1 < currentBlocks.length
-        ? currentBlocks[insertIndex + 1]
-        : null;
+      position === "above"
+        ? currentBlocks[index]
+        : index + 1 < currentBlocks.length
+          ? currentBlocks[index + 1]
+          : null;
 
     const created = await apiRequest("/blocks", {
       method: "POST",
@@ -570,13 +588,31 @@ export default function DocumentEditorPage() {
       }),
     });
 
-    if (currentBlocks.length === 0) {
-      setBlocks([created.block]);
-    } else {
-      const targetIndex = insertIndex >= 0 ? insertIndex : currentBlocks.length - 1;
-      insertBlockAfter(targetIndex, created.block);
-    }
+    const insertIndex = position === "above" ? index - 1 : index;
+    insertBlockAfter(Math.max(insertIndex, -1), created.block);
     setActiveBlockId(created.block.id);
+  }
+
+  async function deleteBlockAt(index) {
+    const currentBlocks = blocksRef.current;
+    const target = currentBlocks[index];
+    if (!target) return;
+
+    await apiRequest(`/blocks/${target.id}`, { method: "DELETE" });
+    removeBlockById(target.id);
+
+    const previousIndex = findPreviousFocusableIndex(index, currentBlocks);
+    const nextIndex = findNextFocusableIndex(index, currentBlocks);
+    const nextTarget =
+      previousIndex !== null
+        ? currentBlocks[previousIndex]
+        : nextIndex !== null
+          ? currentBlocks[nextIndex]
+          : null;
+
+    if (nextTarget) {
+      setActiveBlockId(nextTarget.id);
+    }
   }
 
   function handleTodoToggle(blockId) {
@@ -692,9 +728,6 @@ export default function DocumentEditorPage() {
           <button type="button" onClick={() => router.push("/dashboard")}>
             Back to dashboard
           </button>
-          <button type="button" onClick={handleAddBlock}>
-            New block
-          </button>
         </header>
         <Toast message={toast} onClose={() => setToast("")} />
         <section className="share-card">
@@ -736,6 +769,7 @@ export default function DocumentEditorPage() {
             const showSlashMenu =
               slashMenu.open && slashMenu.blockId === block.id;
             const slashMatches = showSlashMenu ? getSlashMatches() : [];
+            const showActions = isActive;
 
             function handleDragStart(event) {
               event.dataTransfer.effectAllowed = "move";
@@ -785,7 +819,7 @@ export default function DocumentEditorPage() {
             if (block.type === "divider") {
               return (
                 <div
-                  key={block.id}
+                  key={`${block.id}-${block.type}`}
                   className={`block block-divider ${
                     isActive ? "is-active" : ""
                   }`}
@@ -805,6 +839,19 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
+                  {showActions ? (
+                    <div className="block-actions">
+                      <button type="button" onClick={() => createBlockRelative(index, "above")}>
+                        + Above
+                      </button>
+                      <button type="button" onClick={() => createBlockRelative(index, "below")}>
+                        + Below
+                      </button>
+                      <button type="button" onClick={() => deleteBlockAt(index)}>
+                        Delete
+                      </button>
+                    </div>
+                  ) : null}
                   <hr />
                 </div>
               );
@@ -813,7 +860,7 @@ export default function DocumentEditorPage() {
             if (block.type === "image") {
               return (
                 <div
-                  key={block.id}
+                  key={`${block.id}-${block.type}`}
                   className={`block block-image ${
                     isActive ? "is-active" : ""
                   }`}
@@ -833,6 +880,19 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
+                  {showActions ? (
+                    <div className="block-actions">
+                      <button type="button" onClick={() => createBlockRelative(index, "above")}>
+                        + Above
+                      </button>
+                      <button type="button" onClick={() => createBlockRelative(index, "below")}>
+                        + Below
+                      </button>
+                      <button type="button" onClick={() => deleteBlockAt(index)}>
+                        Delete
+                      </button>
+                    </div>
+                  ) : null}
                   <input
                     className="image-input"
                     placeholder="Paste image URL..."
@@ -854,7 +914,7 @@ export default function DocumentEditorPage() {
             if (block.type === "todo") {
               return (
                 <div
-                  key={block.id}
+                  key={`${block.id}-${block.type}`}
                   className={`block block-todo ${isActive ? "is-active" : ""}`}
                   onClick={() => handleBlockSelect(block.id)}
                   onDragOver={handleDragOver}
@@ -867,6 +927,19 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
+                  {showActions ? (
+                    <div className="block-actions">
+                      <button type="button" onClick={() => createBlockRelative(index, "above")}>
+                        + Above
+                      </button>
+                      <button type="button" onClick={() => createBlockRelative(index, "below")}>
+                        + Below
+                      </button>
+                      <button type="button" onClick={() => deleteBlockAt(index)}>
+                        Delete
+                      </button>
+                    </div>
+                  ) : null}
                   <div className="todo-row">
                     <input
                       type="checkbox"
@@ -938,7 +1011,7 @@ export default function DocumentEditorPage() {
 
             return (
               <div
-                key={block.id}
+                key={`${block.id}-${block.type}`}
                 className={`block block-text ${
                   block.type
                 } ${isActive ? "is-active" : ""}`}
@@ -953,6 +1026,19 @@ export default function DocumentEditorPage() {
                 >
                   ::
                 </span>
+                {showActions ? (
+                  <div className="block-actions">
+                    <button type="button" onClick={() => createBlockRelative(index, "above")}>
+                      + Above
+                    </button>
+                    <button type="button" onClick={() => createBlockRelative(index, "below")}>
+                      + Below
+                    </button>
+                    <button type="button" onClick={() => deleteBlockAt(index)}>
+                      Delete
+                    </button>
+                  </div>
+                ) : null}
                 <div
                   className={`block-text block-${block.type}`}
                   contentEditable

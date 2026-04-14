@@ -445,6 +445,35 @@ body {
   opacity: 1;
 }
 
+.block-actions {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.block.is-active .block-actions,
+.block:hover .block-actions,
+.block:focus-within .block-actions {
+  opacity: 1;
+}
+
+.block-actions button {
+  border-radius: 999px;
+  border: 1px solid #e0ddd6;
+  background: #ffffff;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.block-actions button:hover {
+  background: #f4f1ec;
+}
+
 .block-text {
   outline: none;
   min-height: 22px;
