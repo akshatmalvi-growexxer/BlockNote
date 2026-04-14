@@ -23,6 +23,28 @@ function getDisplayText(block) {
   return block.content.text || "";
 }
 
+function getCaretOffset(node) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!node.contains(range.startContainer)) return null;
+  const preRange = range.cloneRange();
+  preRange.selectNodeContents(node);
+  preRange.setEnd(range.startContainer, range.startOffset);
+  return preRange.toString().length;
+}
+
+function placeCaret(node, atEnd) {
+  if (!node) return;
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  range.collapse(!atEnd);
+  const selection = window.getSelection();
+  if (!selection) return;
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 function syncEditableText(node, text, isActive) {
   if (!node) return;
   const nextText = text ?? "";
@@ -139,6 +161,123 @@ export default function DocumentEditorPage() {
     );
   }
 
+  function updateBlockContent(blockId, nextContent) {
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              content: {
+                ...block.content,
+                ...nextContent,
+              },
+            }
+          : block,
+      ),
+    );
+  }
+
+  function insertBlockAfter(index, newBlock) {
+    setBlocks((prev) => {
+      const next = [...prev];
+      next.splice(index + 1, 0, newBlock);
+      return next;
+    });
+  }
+
+  function removeBlockById(blockId) {
+    setBlocks((prev) => prev.filter((block) => block.id !== blockId));
+  }
+
+  function findPreviousFocusableIndex(index, list) {
+    for (let i = index - 1; i >= 0; i -= 1) {
+      const candidate = list[i];
+      if (candidate.type !== "divider" && candidate.type !== "image") {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  async function handleEnter(block, index, node) {
+    const text = node.textContent || "";
+    const caretOffset = getCaretOffset(node) ?? text.length;
+    const beforeText = text.slice(0, caretOffset);
+    const afterText = text.slice(caretOffset);
+    const nextBlock = blocks[index + 1];
+
+    if (caretOffset < text.length) {
+      node.textContent = beforeText;
+      updateBlockContent(block.id, { text: beforeText });
+      await apiRequest(`/blocks/${block.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          content:
+            block.type === "todo"
+              ? { text: beforeText, checked: Boolean(block.content?.checked) }
+              : { text: beforeText },
+        }),
+      });
+    }
+
+    const created = await apiRequest("/blocks", {
+      method: "POST",
+      body: JSON.stringify({
+        documentId,
+        type: "paragraph",
+        content: { text: afterText },
+        parentId: block.parentId ?? null,
+        beforeId: block.id,
+        afterId: nextBlock?.id,
+      }),
+    });
+
+    insertBlockAfter(index, created.block);
+    setActiveBlockId(created.block.id);
+
+    setTimeout(() => {
+      const newNode = blockRefs.current.get(created.block.id);
+      if (newNode) {
+        newNode.focus();
+        placeCaret(newNode, false);
+      }
+    }, 0);
+  }
+
+  async function handleBackspace(block, index, node) {
+    const text = node.textContent || "";
+    const caretOffset = getCaretOffset(node) ?? 0;
+    const isAtStart = caretOffset === 0;
+
+    if (!isAtStart) return;
+
+    if (text.length > 0) {
+      return;
+    }
+
+    if (index === 0) {
+      return;
+    }
+
+    const previousIndex = findPreviousFocusableIndex(index, blocks);
+    const previousBlock =
+      previousIndex !== null ? blocks[previousIndex] : null;
+
+    await apiRequest(`/blocks/${block.id}`, { method: "DELETE" });
+    removeBlockById(block.id);
+
+    if (previousBlock) {
+      setActiveBlockId(previousBlock.id);
+      setTimeout(() => {
+        const prevNode = blockRefs.current.get(previousBlock.id);
+        if (prevNode) {
+          prevNode.focus();
+          placeCaret(prevNode, true);
+        }
+      }, 0);
+    }
+  }
+
   function handleTodoToggle(blockId) {
     setBlocks((prev) =>
       prev.map((block) => {
@@ -191,7 +330,7 @@ export default function DocumentEditorPage() {
           {blockList.length === 0 ? (
             <p className="auth-note">No blocks yet. Add your first block.</p>
           ) : null}
-          {blockList.map((block) => {
+          {blockList.map((block, index) => {
             const isActive = block.id === activeBlockId;
             const label = BLOCK_TYPES[block.type] || block.type;
 
@@ -273,6 +412,18 @@ export default function DocumentEditorPage() {
                         }
                       }}
                       onFocus={() => handleBlockSelect(block.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleEnter(block, index, event.currentTarget);
+                        }
+                        if (event.key === "Backspace") {
+                          if (getCaretOffset(event.currentTarget) === 0) {
+                            event.preventDefault();
+                            handleBackspace(block, index, event.currentTarget);
+                          }
+                        }
+                      }}
                       onInput={(event) =>
                         handleTextInput(block.id, event.currentTarget.textContent)
                       }
@@ -303,6 +454,18 @@ export default function DocumentEditorPage() {
                     }
                   }}
                   onFocus={() => handleBlockSelect(block.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleEnter(block, index, event.currentTarget);
+                    }
+                    if (event.key === "Backspace") {
+                      if (getCaretOffset(event.currentTarget) === 0) {
+                        event.preventDefault();
+                        handleBackspace(block, index, event.currentTarget);
+                      }
+                    }
+                  }}
                   onInput={(event) =>
                     handleTextInput(block.id, event.currentTarget.textContent)
                   }
