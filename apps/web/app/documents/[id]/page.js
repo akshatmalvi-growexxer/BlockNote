@@ -118,6 +118,7 @@ export default function DocumentEditorPage() {
     copying: false,
     error: "",
   });
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [toast, setToast] = useState("");
   const blockRefs = useRef(new Map());
   const activeBlockIdRef = useRef(null);
@@ -127,6 +128,7 @@ export default function DocumentEditorPage() {
   const saveSeq = useRef(new Map());
   const scheduledSaves = useRef(new Set());
   const pendingSaves = useRef(new Set());
+  const shareCardRef = useRef(null);
 
   const documentId = params?.id;
 
@@ -167,8 +169,8 @@ export default function DocumentEditorPage() {
           }
         }
       } catch (error) {
-      if (!cancelled) {
-        router.push("/dashboard");
+        if (!cancelled) {
+          router.push("/dashboard");
         }
       } finally {
         if (!cancelled) {
@@ -216,6 +218,23 @@ export default function DocumentEditorPage() {
       doc.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [slashMenu.open]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (shareCardRef.current && !shareCardRef.current.contains(event.target)) {
+        setIsShareOpen(false);
+      }
+    }
+
+    const doc = globalThis.document;
+    if (!doc || !isShareOpen) return;
+
+    doc.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      doc.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isShareOpen]);
 
   const blockList = useMemo(() => blocks, [blocks]);
 
@@ -269,12 +288,12 @@ export default function DocumentEditorPage() {
       prev.map((block) =>
         block.id === blockId
           ? {
-              ...block,
-              content: {
-                ...block.content,
-                ...nextContent,
-              },
-            }
+            ...block,
+            content: {
+              ...block.content,
+              ...nextContent,
+            },
+          }
           : block,
       ),
     );
@@ -286,10 +305,10 @@ export default function DocumentEditorPage() {
       prev.map((block) =>
         block.id === blockId
           ? {
-              ...block,
-              type: nextType,
-              content: nextContent,
-            }
+            ...block,
+            type: nextType,
+            content: nextContent,
+          }
           : block,
       ),
     );
@@ -366,6 +385,7 @@ export default function DocumentEditorPage() {
     try {
       setShareState((prev) => ({ ...prev, copying: true }));
       await navigator.clipboard.writeText(url);
+      setToast("Link copied to clipboard!");
     } finally {
       setShareState((prev) => ({ ...prev, copying: false }));
     }
@@ -786,6 +806,54 @@ export default function DocumentEditorPage() {
               <span className="back-button-arrow">←</span>
               Dashboard
             </button>
+            <div className="share-dropdown">
+              <button
+                type="button"
+                className="share-dropdown-btn"
+                onClick={() => setIsShareOpen(!isShareOpen)}
+              >
+                Share
+                <span className="share-dropdown-icon">↗</span>
+              </button>
+              {isShareOpen && (
+                <div className="share-card" ref={shareCardRef}>
+                  <div>
+                    <h3>Share</h3>
+                    <p>
+                      {shareState.enabled
+                        ? "Anyone with the link can view this document."
+                        : "Generate a read-only share link."}
+                    </p>
+                  </div>
+                  <div className="share-actions">
+                    <button
+                      type="button"
+                      className={`dash-btn ${shareState.enabled ? "dash-btn--ghost" : "dash-btn--primary"}`}
+                      onClick={handleShareToggle}
+                    >
+                      {shareState.enabled ? "Disable sharing" : "Enable sharing"}
+                    </button>
+                    {shareState.enabled && (
+                      <button
+                        type="button"
+                        className="dash-btn dash-btn--primary"
+                        onClick={handleCopyLink}
+                      >
+                        Copy link
+                      </button>
+                    )}
+                  </div>
+                  {shareState.enabled && (
+                    <div className="share-link">
+                      {getShareUrl(shareState.token)}
+                    </div>
+                  )}
+                  {shareState.error && (
+                    <div className="auth-error">{shareState.error}</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="editor-header-main">
             <p className="eyebrow">Document</p>
@@ -800,34 +868,6 @@ export default function DocumentEditorPage() {
           </div>
         </header>
         <Toast message={toast} onClose={() => setToast("")} />
-        <section className="share-card">
-          <div>
-            <h3>Share</h3>
-            <p>
-              {shareState.enabled
-                ? "Anyone with the link can view this document."
-                : "Generate a read-only share link."}
-            </p>
-          </div>
-          <div className="share-actions">
-            <button type="button" onClick={handleShareToggle}>
-              {shareState.enabled ? "Disable sharing" : "Enable sharing"}
-            </button>
-            {shareState.enabled ? (
-              <button type="button" onClick={handleCopyLink}>
-                {shareState.copying ? "Copying..." : "Copy link"}
-              </button>
-            ) : null}
-          </div>
-          {shareState.enabled ? (
-            <div className="share-link">
-              {getShareUrl(shareState.token)}
-            </div>
-          ) : null}
-          {shareState.error ? (
-            <div className="auth-error">{shareState.error}</div>
-          ) : null}
-        </section>
 
         <div className="editor-blocks">
           {blockList.length === 0 ? (
@@ -899,9 +939,8 @@ export default function DocumentEditorPage() {
               return (
                 <div
                   key={`${block.id}-${block.type}`}
-                  className={`block block-divider ${
-                    isActive ? "is-active" : ""
-                  }`}
+                  className={`block block-divider ${isActive ? "is-active" : ""
+                    }`}
                   onClick={() => handleBlockSelect(block.id)}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -945,9 +984,8 @@ export default function DocumentEditorPage() {
               return (
                 <div
                   key={`${block.id}-${block.type}`}
-                  className={`block block-image ${
-                    isActive ? "is-active" : ""
-                  }`}
+                  className={`block block-image ${isActive ? "is-active" : ""
+                    }`}
                   onClick={() => handleBlockSelect(block.id)}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -1130,9 +1168,8 @@ export default function DocumentEditorPage() {
             return (
               <div
                 key={`${block.id}-${block.type}`}
-                className={`block block-text ${
-                  block.type
-                } ${isActive ? "is-active" : ""}`}
+                className={`block block-text ${block.type
+                  } ${isActive ? "is-active" : ""}`}
                 onClick={() => handleBlockSelect(block.id)}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}

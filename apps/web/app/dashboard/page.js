@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [busy, setBusy] = useState(false);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [toast, setToast] = useState("");
+  const [newlyCreatedId, setNewlyCreatedId] = useState(null);
 
   async function loadDocuments() {
     setLoadingDocs(true);
@@ -57,6 +58,7 @@ export default function DashboardPage() {
     try {
       const data = await apiRequest("/documents", { method: "POST" });
       setDocuments((prev) => [data.document, ...prev]);
+      setNewlyCreatedId(data.document.id);
     } catch (err) {
       setToast(err.message || "Failed to create document.");
     } finally {
@@ -162,6 +164,12 @@ export default function DashboardPage() {
                   <input
                     className="document-title"
                     defaultValue={doc.title}
+                    autoFocus={doc.id === newlyCreatedId}
+                    onFocus={(e) => {
+                      if (doc.id === newlyCreatedId) {
+                        e.target.select();
+                      }
+                    }}
                     onBlur={(event) =>
                       handleRename(doc.id, event.target.value)
                     }
