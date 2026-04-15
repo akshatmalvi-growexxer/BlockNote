@@ -18,6 +18,7 @@
     "dev": "node --watch src/server.js",
     "build": "node -e \"console.log('API build is runtime-only for now')\"",
     "lint": "node --check src/server.js && node --check src/app.js && node --check src/config/env.js",
+    "prisma:migrate": "npx prisma migrate dev --name init",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "test:order-index": "node scripts/order-index-tests.js",
