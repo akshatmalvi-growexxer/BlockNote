@@ -101,6 +101,8 @@ export default function DashboardPage() {
     );
   }
 
+  const displayEmail = user?.email || "your account";
+
   return (
     <main className="dashboard-shell">
       <section className="dashboard-card">
@@ -108,13 +110,26 @@ export default function DashboardPage() {
         <div className="dashboard-header">
           <div>
             <h1>Your documents</h1>
-            <p>Signed in as {user?.email || "unknown user"}.</p>
+            <p className="dashboard-email">
+              <span className="dashboard-email-icon">👤</span>
+              {displayEmail}
+            </p>
           </div>
           <div className="dashboard-actions">
-            <button type="button" onClick={handleCreate} disabled={busy}>
-              {busy ? "Working..." : "New document"}
+            <button
+              type="button"
+              className="dash-btn dash-btn--primary"
+              onClick={handleCreate}
+              disabled={busy}
+            >
+              <span className="dash-btn-icon">+</span>
+              {busy ? "Creating..." : "New document"}
             </button>
-            <button type="button" onClick={handleLogout}>
+            <button
+              type="button"
+              className="dash-btn dash-btn--ghost"
+              onClick={handleLogout}
+            >
               Log out
             </button>
           </div>
@@ -126,7 +141,19 @@ export default function DashboardPage() {
             Loading documents...
           </div>
         ) : documents.length === 0 ? (
-          <p className="empty-state">No documents yet. Create your first one.</p>
+          <div className="dashboard-empty">
+            <div className="dashboard-empty-icon">📝</div>
+            <p>No documents yet.</p>
+            <button
+              type="button"
+              className="dash-btn dash-btn--primary"
+              onClick={handleCreate}
+              disabled={busy}
+            >
+              <span className="dash-btn-icon">+</span>
+              Create your first document
+            </button>
+          </div>
         ) : (
           <ul className="document-list">
             {documents.map((doc) => (
@@ -145,14 +172,14 @@ export default function DashboardPage() {
                 </div>
                 <button
                   type="button"
-                  className="document-open"
+                  className="dash-btn dash-btn--outline"
                   onClick={() => router.push(`/documents/${doc.id}`)}
                 >
                   Open
                 </button>
                 <button
                   type="button"
-                  className="document-delete"
+                  className="dash-btn dash-btn--danger"
                   onClick={() => handleDelete(doc.id)}
                   disabled={busy}
                 >
