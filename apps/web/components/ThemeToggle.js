@@ -16,7 +16,7 @@ function resolveInitialTheme() {
   return "light";
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ variant = "floating" }) {
   const [theme, setTheme] = useState("light");
 
   useEffect(() => {
@@ -33,15 +33,19 @@ export default function ThemeToggle() {
     setTheme(nextTheme);
   }
 
+  const isNav = variant === "nav";
+
   return (
     <button
       type="button"
-      className="theme-toggle"
+      className={isNav ? "theme-toggle-nav" : "theme-toggle"}
       onClick={handleToggle}
       aria-pressed={theme === "dark"}
       aria-label="Toggle color theme"
+      id="theme-toggle-btn"
     >
-      {theme === "dark" ? "Light mode" : "Dark mode"}
+      {theme === "dark" ? "☀️" : "🌙"}
+      {!isNav && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
     </button>
   );
 }

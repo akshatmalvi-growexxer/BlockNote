@@ -783,7 +783,8 @@ export default function DocumentEditorPage() {
               className="back-button"
               onClick={() => router.push("/dashboard")}
             >
-              Back to dashboard
+              <span className="back-button-arrow">←</span>
+              Dashboard
             </button>
           </div>
           <div className="editor-header-main">
@@ -847,7 +848,7 @@ export default function DocumentEditorPage() {
             const showSlashMenu =
               slashMenu.open && slashMenu.blockId === block.id;
             const slashMatches = showSlashMenu ? getSlashMatches() : [];
-            const showActions = true;
+            const isLastBlock = index === blockList.length - 1;
 
             function handleDragStart(event) {
               event.dataTransfer.effectAllowed = "move";
@@ -917,19 +918,21 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
-                  {showActions ? (
-                    <div className="block-actions">
-                      <button type="button" onClick={() => createBlockRelative(index, "above")}>
-                        + Above
-                      </button>
-                      <button type="button" onClick={() => createBlockRelative(index, "below")}>
-                        + Below
-                      </button>
-                      <button type="button" onClick={() => deleteBlockAt(index)}>
-                        Delete
-                      </button>
+                  <div className="block-border-zone block-border-zone--top">
+                    <div className="block-border-zone-line" />
+                    <div className="block-border-zone-actions">
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                     </div>
-                  ) : null}
+                  </div>
+                  {isLastBlock && (
+                    <div className="block-border-zone block-border-zone--bottom">
+                      <div className="block-border-zone-line" />
+                      <div className="block-border-zone-actions">
+                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                      </div>
+                    </div>
+                  )}
                   <hr />
                 </div>
               );
@@ -961,19 +964,21 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
-                  {showActions ? (
-                    <div className="block-actions">
-                      <button type="button" onClick={() => createBlockRelative(index, "above")}>
-                        + Above
-                      </button>
-                      <button type="button" onClick={() => createBlockRelative(index, "below")}>
-                        + Below
-                      </button>
-                      <button type="button" onClick={() => deleteBlockAt(index)}>
-                        Delete
-                      </button>
+                  <div className="block-border-zone block-border-zone--top">
+                    <div className="block-border-zone-line" />
+                    <div className="block-border-zone-actions">
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                     </div>
-                  ) : null}
+                  </div>
+                  {isLastBlock && (
+                    <div className="block-border-zone block-border-zone--bottom">
+                      <div className="block-border-zone-line" />
+                      <div className="block-border-zone-actions">
+                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                      </div>
+                    </div>
+                  )}
                   {isEditingImage ? (
                     <>
                       <input
@@ -1038,19 +1043,21 @@ export default function DocumentEditorPage() {
                   >
                     ::
                   </span>
-                  {showActions ? (
-                    <div className="block-actions">
-                      <button type="button" onClick={() => createBlockRelative(index, "above")}>
-                        + Above
-                      </button>
-                      <button type="button" onClick={() => createBlockRelative(index, "below")}>
-                        + Below
-                      </button>
-                      <button type="button" onClick={() => deleteBlockAt(index)}>
-                        Delete
-                      </button>
+                  <div className="block-border-zone block-border-zone--top">
+                    <div className="block-border-zone-line" />
+                    <div className="block-border-zone-actions">
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                     </div>
-                  ) : null}
+                  </div>
+                  {isLastBlock && (
+                    <div className="block-border-zone block-border-zone--bottom">
+                      <div className="block-border-zone-line" />
+                      <div className="block-border-zone-actions">
+                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                      </div>
+                    </div>
+                  )}
                   <div className="todo-row">
                     <input
                       type="checkbox"
@@ -1137,19 +1144,21 @@ export default function DocumentEditorPage() {
                 >
                   ::
                 </span>
-                {showActions ? (
-                  <div className="block-actions">
-                    <button type="button" onClick={() => createBlockRelative(index, "above")}>
-                      + Above
-                    </button>
-                    <button type="button" onClick={() => createBlockRelative(index, "below")}>
-                      + Below
-                    </button>
-                    <button type="button" onClick={() => deleteBlockAt(index)}>
-                      Delete
-                    </button>
+                <div className="block-border-zone block-border-zone--top">
+                  <div className="block-border-zone-line" />
+                  <div className="block-border-zone-actions">
+                    <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                    <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                   </div>
-                ) : null}
+                </div>
+                {isLastBlock && (
+                  <div className="block-border-zone block-border-zone--bottom">
+                    <div className="block-border-zone-line" />
+                    <div className="block-border-zone-actions">
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                    </div>
+                  </div>
+                )}
                 <div
                   className={`block-text block-${block.type}`}
                   contentEditable
