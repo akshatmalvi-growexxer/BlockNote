@@ -110,6 +110,7 @@ export default function DocumentEditorPage() {
   });
   const [saveState, setSaveState] = useState("idle");
   const [dragId, setDragId] = useState(null);
+  const [dropTargetId, setDropTargetId] = useState(null);
   const [editingImages, setEditingImages] = useState({});
   const [imageErrors, setImageErrors] = useState({});
   const [shareState, setShareState] = useState({
@@ -899,11 +900,19 @@ export default function DocumentEditorPage() {
             function handleDragOver(event) {
               event.preventDefault();
               event.dataTransfer.dropEffect = "move";
+              setDropTargetId(block.id);
+            }
+
+            function handleDragLeave(event) {
+              if (event.target === event.currentTarget) {
+                setDropTargetId(null);
+              }
             }
 
             async function handleDrop() {
               if (!dragId || dragId === block.id) {
                 setDragId(null);
+                setDropTargetId(null);
                 return;
               }
 
@@ -911,6 +920,7 @@ export default function DocumentEditorPage() {
               const toIndex = blockList.findIndex((item) => item.id === block.id);
               if (fromIndex === -1 || toIndex === -1) {
                 setDragId(null);
+                setDropTargetId(null);
                 return;
               }
 
@@ -933,6 +943,7 @@ export default function DocumentEditorPage() {
               });
 
               setDragId(null);
+              setDropTargetId(null);
             }
 
             if (block.type === "divider") {
@@ -940,9 +951,10 @@ export default function DocumentEditorPage() {
                 <div
                   key={`${block.id}-${block.type}`}
                   className={`block block-divider ${isActive ? "is-active" : ""
-                    }`}
+                    } ${dragId === block.id ? "is-dragging" : ""} ${dropTargetId === block.id ? "is-drop-target" : ""}`}
                   onClick={() => handleBlockSelect(block.id)}
                   onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   role="button"
                   tabIndex={0}
@@ -960,7 +972,7 @@ export default function DocumentEditorPage() {
                   <div className="block-border-zone block-border-zone--top">
                     <div className="block-border-zone-line" />
                     <div className="block-border-zone-actions">
-                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>↑ Add </button>
                       <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                     </div>
                   </div>
@@ -968,7 +980,7 @@ export default function DocumentEditorPage() {
                     <div className="block-border-zone block-border-zone--bottom">
                       <div className="block-border-zone-line" />
                       <div className="block-border-zone-actions">
-                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>↓ Add </button>
                       </div>
                     </div>
                   )}
@@ -985,9 +997,10 @@ export default function DocumentEditorPage() {
                 <div
                   key={`${block.id}-${block.type}`}
                   className={`block block-image ${isActive ? "is-active" : ""
-                    }`}
+                    } ${dragId === block.id ? "is-dragging" : ""} ${dropTargetId === block.id ? "is-drop-target" : ""}`}
                   onClick={() => handleBlockSelect(block.id)}
                   onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   role="button"
                   tabIndex={0}
@@ -1005,7 +1018,7 @@ export default function DocumentEditorPage() {
                   <div className="block-border-zone block-border-zone--top">
                     <div className="block-border-zone-line" />
                     <div className="block-border-zone-actions">
-                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>↑ Add </button>
                       <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                     </div>
                   </div>
@@ -1013,7 +1026,7 @@ export default function DocumentEditorPage() {
                     <div className="block-border-zone block-border-zone--bottom">
                       <div className="block-border-zone-line" />
                       <div className="block-border-zone-actions">
-                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>↓ Add </button>
                       </div>
                     </div>
                   )}
@@ -1069,9 +1082,10 @@ export default function DocumentEditorPage() {
               return (
                 <div
                   key={`${block.id}-${block.type}`}
-                  className={`block block-todo ${isActive ? "is-active" : ""}`}
+                  className={`block block-todo ${isActive ? "is-active" : ""} ${dragId === block.id ? "is-dragging" : ""} ${dropTargetId === block.id ? "is-drop-target" : ""}`}
                   onClick={() => handleBlockSelect(block.id)}
                   onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
                   <span
@@ -1084,7 +1098,7 @@ export default function DocumentEditorPage() {
                   <div className="block-border-zone block-border-zone--top">
                     <div className="block-border-zone-line" />
                     <div className="block-border-zone-actions">
-                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>↑ Add </button>
                       <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                     </div>
                   </div>
@@ -1092,7 +1106,7 @@ export default function DocumentEditorPage() {
                     <div className="block-border-zone block-border-zone--bottom">
                       <div className="block-border-zone-line" />
                       <div className="block-border-zone-actions">
-                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                        <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>↓ Add </button>
                       </div>
                     </div>
                   )}
@@ -1169,9 +1183,10 @@ export default function DocumentEditorPage() {
               <div
                 key={`${block.id}-${block.type}`}
                 className={`block block-text ${block.type
-                  } ${isActive ? "is-active" : ""}`}
+                  } ${isActive ? "is-active" : ""} ${dragId === block.id ? "is-dragging" : ""} ${dropTargetId === block.id ? "is-drop-target" : ""}`}
                 onClick={() => handleBlockSelect(block.id)}
                 onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
                 <span
@@ -1184,7 +1199,7 @@ export default function DocumentEditorPage() {
                 <div className="block-border-zone block-border-zone--top">
                   <div className="block-border-zone-line" />
                   <div className="block-border-zone-actions">
-                    <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>+ Add block</button>
+                    <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "above")}>↑ Add </button>
                     <button type="button" className="block-border-zone-btn block-border-zone-btn--delete" onClick={() => deleteBlockAt(index)}>Delete</button>
                   </div>
                 </div>
@@ -1192,7 +1207,7 @@ export default function DocumentEditorPage() {
                   <div className="block-border-zone block-border-zone--bottom">
                     <div className="block-border-zone-line" />
                     <div className="block-border-zone-actions">
-                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>+ Add block</button>
+                      <button type="button" className="block-border-zone-btn" onClick={() => createBlockRelative(index, "below")}>↓ Add </button>
                     </div>
                   </div>
                 )}

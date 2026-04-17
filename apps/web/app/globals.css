@@ -1687,6 +1687,20 @@ body {
   background: var(--surface);
 }
 
+.block.is-dragging {
+  opacity: 0.4;
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  transform: scale(0.98);
+}
+
+.block.is-drop-target {
+  border-color: var(--accent);
+  border-width: 2px;
+  background: var(--surface-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
 .block-handle {
   position: absolute;
   left: -6px;
